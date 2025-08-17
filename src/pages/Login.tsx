@@ -6,6 +6,8 @@ import { useAuth } from '../lib/AuthProvider';
 
 const Login = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -13,8 +15,6 @@ const Login = () => {
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
-  const navigate = useNavigate();
-  const toast = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
