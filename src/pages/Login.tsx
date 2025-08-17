@@ -11,6 +11,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -25,7 +26,29 @@ const Login = () => {
         password,
       });
       if (error) throw error;
-      navigate('/dashboard');
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user && !user.email_confirmed_at) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: email
+        });
+        
+        if (resendError) throw resendError;
+        
+        setIsVerificationSent(true);
+        toast({
+          title: 'Email Verification Required',
+          description: 'Please check your email and verify your account before logging in.',
+          status: 'warning',
+          duration: 10000,
+          isClosable: true
+        });
+      } else {
+        navigate('/dashboard');
+      }
+      
       setIsLoading(false);
     } catch (error: any) {
       toast({
@@ -42,6 +65,14 @@ const Login = () => {
     <Container maxW="container.sm" py={10}>
       <Box as="form" onSubmit={handleLogin}>
         <VStack spacing={4}>
+          {isVerificationSent && (
+            <Box p={4} bg="orange.100" borderRadius="md" width="full">
+              <Text color="orange.800">
+                Please verify your email before logging in. 
+                Check your inbox for the verification link.
+              </Text>
+            </Box>
+          )}
           <FormControl isRequired>
             <FormLabel>Email</FormLabel>
             <Input

@@ -1,4 +1,4 @@
-import { Box, Button, Container, FormControl, FormLabel, Input, VStack, useToast, Heading } from '@chakra-ui/react';
+import { Box, Button, Container, FormControl, FormLabel, Input, VStack, useToast, Heading, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useNavigate, Navigate, Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -63,6 +63,15 @@ const Register = () => {
       <Box as="form" onSubmit={handleRegister}>
         <VStack spacing={6}>
           <Heading>Create Account</Heading>
+          <Box p={4} bg="blue.50" borderRadius="md" width="full">
+            <VStack spacing={2} align="start">
+              <Heading size="sm" color="blue.700">Email Verification Required</Heading>
+              <Text color="blue.600">
+                After registration, you'll need to verify your email address before you can log in.
+                Please check your inbox for the verification link.
+              </Text>
+            </VStack>
+          </Box>
           <FormControl isRequired>
             <FormLabel>Email</FormLabel>
             <Input
