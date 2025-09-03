@@ -64,10 +64,7 @@ const CourseTracker = () => {
     try {
       const { data, error } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          friend_profile:profiles!friendships_friend_id_fkey(id, email)
-        `)
+        .select('*')
         .eq('status', 'accepted');
 
       if (error) throw error;

@@ -124,10 +124,7 @@ const Friends: React.FC = () => {
 
       const { data, error } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          friend_profile:profiles!friendships_friend_id_fkey(id, email)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .eq('status', 'accepted');
 
@@ -184,10 +181,7 @@ const Friends: React.FC = () => {
         
         const { data, error } = await supabase
           .from('golf_rounds')
-          .select(`
-            *,
-            user_profile:profiles!golf_rounds_user_id_fkey(id, email)
-          `)
+          .select('*')
           .in('user_id', friendIds)
           .order('date_played', { ascending: false })
           .limit(20);
@@ -215,10 +209,7 @@ const Friends: React.FC = () => {
 
       const { data, error } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          requester_profile:profiles!friendships_user_id_fkey(id, email)
-        `)
+        .select('*')
         .eq('friend_id', user.id)
         .eq('status', 'pending');
 
