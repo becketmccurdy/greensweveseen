@@ -32,7 +32,12 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               } />
-              <Route path="/track" element={
+              <Route path="/track-course" element={
+                <ProtectedRoute>
+                  <CourseTracker />
+                </ProtectedRoute>
+              } />
+              <Route path="/edit-round/:id" element={
                 <ProtectedRoute>
                   <CourseTracker />
                 </ProtectedRoute>

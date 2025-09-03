@@ -13,11 +13,14 @@ import {
   FormErrorMessage,
   Text,
   HStack,
-  IconButton
+  IconButton,
+  RadioGroup,
+  Radio,
+  Stack
 } from '@chakra-ui/react';
 import { ChevronLeftIcon } from '@chakra-ui/icons';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const CourseTracker = () => {
@@ -26,9 +29,49 @@ const CourseTracker = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [playingPartners, setPlayingPartners] = useState('');
+  const [holes, setHoles] = useState('18');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
+  const { id } = useParams();
+  const isEditing = !!id;
+
+  useEffect(() => {
+    if (isEditing && id) {
+      loadRoundData(id);
+    }
+  }, [isEditing, id]);
+
+  const loadRoundData = async (roundId: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('golf_rounds')
+        .select('*')
+        .eq('id', roundId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setCourseName(data.course_name);
+        setScore(data.score.toString());
+        setDate(data.date_played);
+        setPlayingPartners(data.playing_partners?.join(', ') || '');
+        setHoles(data.holes?.toString() || '18');
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load round data',
+        status: 'error',
+        duration: 3000,
+      });
+      navigate('/dashboard');
+    }
+    setIsLoading(false);
+  };
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -61,19 +104,34 @@ const CourseTracker = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { error } = await supabase.from('golf_rounds').insert({
+      const roundData = {
         course_name: courseName,
         score: parseInt(score),
         date_played: date,
         playing_partners: playingPartners ? playingPartners.split(',').map(p => p.trim()) : [],
+        holes: parseInt(holes),
         user_id: user.id
-      });
+      };
+
+      let error;
+      if (isEditing && id) {
+        const result = await supabase
+          .from('golf_rounds')
+          .update(roundData)
+          .eq('id', id);
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from('golf_rounds')
+          .insert(roundData);
+        error = result.error;
+      }
 
       if (error) throw error;
 
       toast({
         title: 'Success',
-        description: 'Golf round recorded successfully!',
+        description: isEditing ? 'Golf round updated successfully!' : 'Golf round recorded successfully!',
         status: 'success',
         duration: 3000,
       });
@@ -98,7 +156,7 @@ const CourseTracker = () => {
           variant="ghost"
           onClick={() => navigate('/dashboard')}
         />
-        <Heading size="lg">Track New Round</Heading>
+        <Heading size="lg">{isEditing ? 'Edit Round' : 'Track New Round'}</Heading>
         <Box w={8} /> {/* Spacer for alignment */}
       </HStack>
       <Box as="form" onSubmit={handleSubmit}>
@@ -149,6 +207,16 @@ const CourseTracker = () => {
           </FormControl>
 
           <FormControl>
+            <FormLabel>Number of Holes</FormLabel>
+            <RadioGroup value={holes} onChange={setHoles}>
+              <Stack direction="row" spacing={6}>
+                <Radio value="9">9 holes</Radio>
+                <Radio value="18">18 holes</Radio>
+              </Stack>
+            </RadioGroup>
+          </FormControl>
+
+          <FormControl>
             <FormLabel>Playing Partners</FormLabel>
             <Input
               value={playingPartners}
@@ -164,9 +232,9 @@ const CourseTracker = () => {
               type="submit" 
               colorScheme="green" 
               width="full"
-              isLoading={isSubmitting}
-              loadingText="Saving round...">
-            Save Round
+              isLoading={isSubmitting || isLoading}
+              loadingText={isEditing ? "Updating round..." : "Saving round..."}>
+            {isEditing ? 'Update Round' : 'Save Round'}
           </Button>
         </VStack>
       </Box>

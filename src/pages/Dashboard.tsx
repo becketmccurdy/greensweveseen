@@ -16,10 +16,22 @@ import {
   StatGroup,
   Skeleton,
   Badge,
-  Box
+  Box,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure
 } from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
-import { useEffect, useState } from 'react';
+import { AddIcon, EditIcon, DeleteIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -29,6 +41,7 @@ interface GolfRound {
   date_played: string;
   score: number;
   playing_partners: string[];
+  holes?: number;
 }
 
 interface Stats {
@@ -48,10 +61,49 @@ const Dashboard = () => {
     totalRounds: 0,
     recentTrend: null
   });
+  const [deleteRoundId, setDeleteRoundId] = useState<string | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef<any>(null);
 
   useEffect(() => {
     fetchRounds();
   }, []);
+
+  const handleDeleteRound = async () => {
+    if (!deleteRoundId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('golf_rounds')
+        .delete()
+        .eq('id', deleteRoundId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Success',
+        description: 'Golf round deleted successfully',
+        status: 'success',
+        duration: 3000,
+      });
+      
+      fetchRounds(); // Refresh the list
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      });
+    }
+    
+    setDeleteRoundId(null);
+    onClose();
+  };
+
+  const handleEditRound = (roundId: string) => {
+    navigate(`/edit-round/${roundId}`);
+  };
 
   const toast = useToast();
 
@@ -195,24 +247,60 @@ const Dashboard = () => {
               <VStack align="stretch" spacing={3}>
                 <HStack justify="space-between">
                   <Heading size="md">{round.course_name}</Heading>
-                  <Badge
-                    colorScheme={round.score <= stats.averageScore ? 'green' : 'orange'}
-                    fontSize="lg"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                  >
-                    {round.score}
-                  </Badge>
+                  <HStack spacing={2}>
+                    <Badge
+                      colorScheme={round.score <= stats.averageScore ? 'green' : 'orange'}
+                      fontSize="lg"
+                      px={3}
+                      py={1}
+                      borderRadius="full"
+                    >
+                      {round.score}
+                    </Badge>
+                    <Menu>
+                      <MenuButton
+                        as={IconButton}
+                        icon={<ChevronDownIcon />}
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Options"
+                      />
+                      <MenuList>
+                        <MenuItem
+                          icon={<EditIcon />}
+                          onClick={() => handleEditRound(round.id)}
+                        >
+                          Edit Round
+                        </MenuItem>
+                        <MenuItem
+                          icon={<DeleteIcon />}
+                          onClick={() => {
+                            setDeleteRoundId(round.id);
+                            onOpen();
+                          }}
+                          color="red.500"
+                        >
+                          Delete Round
+                        </MenuItem>
+                      </MenuList>
+                    </Menu>
+                  </HStack>
                 </HStack>
-                <Text color="gray.600">
-                  {new Date(round.date_played).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </Text>
+                <VStack align="start" spacing={1}>
+                  <Text color="gray.600">
+                    {new Date(round.date_played).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </Text>
+                  {round.holes && (
+                    <Text fontSize="sm" color="gray.500">
+                      {round.holes} holes
+                    </Text>
+                  )}
+                </VStack>
                 {round.playing_partners.length > 0 && (
                   <Box>
                     <Text fontSize="sm" color="gray.500" mb={1}>Played with:</Text>
@@ -231,6 +319,33 @@ const Dashboard = () => {
         ))}
       </SimpleGrid>
       )}
+      
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Golf Round
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to delete this golf round? This action cannot be undone.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleDeleteRound} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
       </VStack>
     </Container>
   );
