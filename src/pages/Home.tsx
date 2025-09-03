@@ -1,10 +1,17 @@
 import { Box, Heading, Text, Button, Container, VStack, Spinner, Center } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthProvider';
+import { useEffect } from 'react';
 
 const Home = () => {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
@@ -12,6 +19,10 @@ const Home = () => {
         <Spinner size="xl" color="green.500" />
       </Center>
     );
+  }
+
+  if (user) {
+    return null; // Will redirect to dashboard
   }
 
   return (
