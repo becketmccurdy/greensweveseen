@@ -13,7 +13,7 @@ declare global {
 export const loadGoogleMapsAPI = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // If already loaded, resolve immediately
-    if (isLoaded) {
+    if (isLoaded && window.google && window.google.maps) {
       resolve();
       return;
     }
@@ -21,7 +21,7 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
     // If currently loading, wait for it
     if (isLoading) {
       const checkLoaded = () => {
-        if (isLoaded) {
+        if (isLoaded && window.google && window.google.maps) {
           resolve();
         } else {
           setTimeout(checkLoaded, 100);
@@ -41,25 +41,21 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
       return;
     }
 
-    // Check if script already exists
+    // Remove existing script if it exists but didn't load properly
     const existingScript = document.getElementById('google-maps-script');
     if (existingScript) {
-      existingScript.addEventListener('load', () => {
-        isLoaded = true;
-        isLoading = false;
-        resolve();
-      });
-      return;
+      existingScript.remove();
     }
 
     // Create and load the script
     const script = document.createElement('script');
     script.id = 'google-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
     script.async = true;
     script.defer = true;
 
-    script.onload = () => {
+    // Set up global callback
+    (window as any).initGoogleMaps = () => {
       isLoaded = true;
       isLoading = false;
       resolve();

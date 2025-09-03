@@ -28,9 +28,14 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
   useEffect(() => {
     const initMap = async () => {
       try {
+        console.log('Starting map initialization...');
         await loadGoogleMapsAPI();
+        console.log('Google Maps API loaded successfully');
         
-        if (!mapRef.current) return;
+        if (!mapRef.current) {
+          console.error('Map container ref not found');
+          return;
+        }
 
         const mapInstance = new google.maps.Map(mapRef.current, {
           zoom: 4,
@@ -38,6 +43,7 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
           mapTypeId: google.maps.MapTypeId.ROADMAP,
         });
 
+        console.log('Map instance created');
         setMap(mapInstance);
 
         const bounds = new google.maps.LatLngBounds();

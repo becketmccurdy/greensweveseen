@@ -120,24 +120,36 @@ const CourseTracker = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!validateForm()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please check the form for errors',
-        status: 'error',
-        duration: 3000,
-      });
       return;
     }
 
     setIsSubmitting(true);
+    setIsGeocodingAddress(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Geocode the course name to get coordinates
-      setIsGeocodingAddress(true);
-      const coordinates = await geocodeAddress(`${courseName} golf course`);
+      // Try geocoding but don't block submission if it fails
+      let latitude = null;
+      let longitude = null;
+      
+      try {
+        console.log('Attempting to geocode:', courseName);
+        const coords = await geocodeAddress(courseName);
+        if (coords) {
+          latitude = coords.lat;
+          longitude = coords.lng;
+          console.log('Geocoding successful:', coords);
+        } else {
+          console.log('Geocoding returned no results');
+        }
+      } catch (geocodeError) {
+        console.warn('Geocoding failed, saving without coordinates:', geocodeError);
+      }
+
       setIsGeocodingAddress(false);
 
       const roundData = {
@@ -146,8 +158,8 @@ const CourseTracker = () => {
         date_played: date,
         playing_partners: playingPartners ? playingPartners.split(',').map(p => p.trim()) : [],
         holes: parseInt(holes),
-        latitude: coordinates?.lat || null,
-        longitude: coordinates?.lng || null,
+        latitude: latitude || null,
+        longitude: longitude || null,
         user_id: user.id
       };
 
