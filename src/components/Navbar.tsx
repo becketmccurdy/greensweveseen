@@ -17,7 +17,7 @@ const Navbar = () => {
       <Flex justify="space-between" align="center" maxW="1200px" mx="auto">
         <HStack spacing={8}>
           <ChakraLink as={RouterLink} to="/" color="white" fontWeight="bold" fontSize="xl">
-            📈 GreenTracker
+            🏌️ GreensWeveSeen
           </ChakraLink>
           {user && (
             <HStack spacing={6}>
