@@ -24,8 +24,11 @@ const Navbar = () => {
               <ChakraLink as={RouterLink} to="/dashboard" color="white">
                 Dashboard
               </ChakraLink>
-              <ChakraLink as={RouterLink} to="/track" color="white">
+              <ChakraLink as={RouterLink} to="/track-course" color="white">
                 Track Course
+              </ChakraLink>
+              <ChakraLink as={RouterLink} to="/friends" color="white">
+                Friends
               </ChakraLink>
               <ChakraLink as={RouterLink} to="/profile" color="white">
                 Profile

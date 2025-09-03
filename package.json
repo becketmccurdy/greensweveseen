@@ -10,6 +10,7 @@
     "@chakra-ui/theme-tools": "^2.2.6",
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",
+    "@googlemaps/react-wrapper": "^1.2.0",
     "@supabase/supabase-js": "^2.55.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.7.0",
@@ -52,5 +53,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.58.1"
   }
 }

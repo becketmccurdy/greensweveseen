@@ -9,6 +9,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CourseTracker from './pages/CourseTracker';
 import Profile from './pages/Profile';
+import Friends from './pages/Friends';
+import JoinInvitation from './pages/JoinInvitation';
 import { AuthProvider } from './lib/AuthProvider';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -47,6 +49,12 @@ function App() {
                   <Profile />
                 </ProtectedRoute>
               } />
+              <Route path="/friends" element={
+                <ProtectedRoute>
+                  <Friends />
+                </ProtectedRoute>
+              } />
+              <Route path="/join/:inviteCode" element={<JoinInvitation />} />
             </Routes>
           </Box>
           </AuthProvider>

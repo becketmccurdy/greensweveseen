@@ -16,12 +16,17 @@ import {
   IconButton,
   RadioGroup,
   Radio,
-  Stack
+  Stack,
+  Checkbox,
+  CheckboxGroup,
+  Divider,
+  Badge
 } from '@chakra-ui/react';
 import { ChevronLeftIcon } from '@chakra-ui/icons';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { geocodeAddress } from '../utils/googleMaps';
 
 const CourseTracker = () => {
   const [courseName, setCourseName] = useState('');
@@ -32,6 +37,9 @@ const CourseTracker = () => {
   const [holes, setHoles] = useState('18');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const navigate = useNavigate();
   const toast = useToast();
   const { id } = useParams();
@@ -41,7 +49,25 @@ const CourseTracker = () => {
     if (isEditing && id) {
       loadRoundData(id);
     }
+    fetchFriends();
   }, [isEditing, id]);
+
+  const fetchFriends = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('friendships')
+        .select(`
+          *,
+          friend_profile:profiles!friendships_friend_id_fkey(id, email)
+        `)
+        .eq('status', 'accepted');
+
+      if (error) throw error;
+      setFriends(data || []);
+    } catch (error: any) {
+      console.error('Error fetching friends:', error);
+    }
+  };
 
   const loadRoundData = async (roundId: string) => {
     setIsLoading(true);
@@ -104,30 +130,62 @@ const CourseTracker = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Geocode the course name to get coordinates
+      setIsGeocodingAddress(true);
+      const coordinates = await geocodeAddress(`${courseName} golf course`);
+      setIsGeocodingAddress(false);
+
       const roundData = {
         course_name: courseName,
         score: parseInt(score),
         date_played: date,
         playing_partners: playingPartners ? playingPartners.split(',').map(p => p.trim()) : [],
         holes: parseInt(holes),
+        latitude: coordinates?.lat || null,
+        longitude: coordinates?.lng || null,
         user_id: user.id
       };
 
-      let error;
+      let roundResult: any;
       if (isEditing && id) {
-        const result = await supabase
+        roundResult = await supabase
           .from('golf_rounds')
           .update(roundData)
-          .eq('id', id);
-        error = result.error;
+          .eq('id', id)
+          .select()
+          .single();
       } else {
-        const result = await supabase
+        roundResult = await supabase
           .from('golf_rounds')
-          .insert(roundData);
-        error = result.error;
+          .insert(roundData)
+          .select()
+          .single();
       }
 
-      if (error) throw error;
+      if (roundResult.error) throw roundResult.error;
+
+      // Handle sharing with friends
+      if (selectedFriends.length > 0 && roundResult.data) {
+        const sharedRoundsData = selectedFriends.map((friendId: string) => ({
+          round_id: roundResult.data.id,
+          shared_with: friendId
+        }));
+
+        const { error: shareError } = await supabase
+          .from('shared_rounds')
+          .insert(sharedRoundsData);
+
+        if (shareError) {
+          console.error('Error sharing round:', shareError);
+          // Don't throw error here - round was saved successfully
+          toast({
+            title: 'Round saved, but sharing failed',
+            description: 'Your round was saved but could not be shared with friends',
+            status: 'warning',
+            duration: 3000,
+          });
+        }
+      }
 
       toast({
         title: 'Success',
@@ -228,12 +286,42 @@ const CourseTracker = () => {
             </Text>
           </FormControl>
 
+          {friends.length > 0 && (
+            <>
+              <Divider />
+              <FormControl>
+                <FormLabel>Share with Friends</FormLabel>
+                <Text fontSize="sm" color="gray.600" mb={3}>
+                  Select friends to share this round with. They'll be able to see your score and details.
+                </Text>
+                <CheckboxGroup
+                  value={selectedFriends}
+                  onChange={(values) => setSelectedFriends(values as string[])}
+                >
+                  <VStack align="start" spacing={2}>
+                    {friends.map((friend) => (
+                      <Checkbox key={friend.friend_id} value={friend.friend_id}>
+                        <HStack spacing={2}>
+                          <Text>{friend.friend_profile?.email || 'Unknown Friend'}</Text>
+                          <Badge colorScheme="green" size="sm">Friend</Badge>
+                        </HStack>
+                      </Checkbox>
+                    ))}
+                  </VStack>
+                </CheckboxGroup>
+              </FormControl>
+            </>
+          )}
+
           <Button 
               type="submit" 
               colorScheme="green" 
               width="full"
-              isLoading={isSubmitting || isLoading}
-              loadingText={isEditing ? "Updating round..." : "Saving round..."}>
+              isLoading={isSubmitting || isLoading || isGeocodingAddress}
+              loadingText={
+                isGeocodingAddress ? "Finding course location..." :
+                isEditing ? "Updating round..." : "Saving round..."
+              }>
             {isEditing ? 'Update Round' : 'Save Round'}
           </Button>
         </VStack>
