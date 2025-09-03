@@ -45,26 +45,33 @@ ALTER TABLE friend_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shared_rounds ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for friendships
+DROP POLICY IF EXISTS "Users can view their own friendships" ON friendships;
 CREATE POLICY "Users can view their own friendships" ON friendships
   FOR SELECT USING (auth.uid() = user_id OR auth.uid() = friend_id);
 
+DROP POLICY IF EXISTS "Users can create friendships" ON friendships;
 CREATE POLICY "Users can create friendships" ON friendships
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own friendships" ON friendships;
 CREATE POLICY "Users can update their own friendships" ON friendships
   FOR UPDATE USING (auth.uid() = user_id OR auth.uid() = friend_id);
 
 -- RLS Policies for friend_invitations
+DROP POLICY IF EXISTS "Users can view their own invitations" ON friend_invitations;
 CREATE POLICY "Users can view their own invitations" ON friend_invitations
   FOR SELECT USING (auth.uid() = inviter_id);
 
+DROP POLICY IF EXISTS "Users can create invitations" ON friend_invitations;
 CREATE POLICY "Users can create invitations" ON friend_invitations
   FOR INSERT WITH CHECK (auth.uid() = inviter_id);
 
+DROP POLICY IF EXISTS "Users can update their own invitations" ON friend_invitations;
 CREATE POLICY "Users can update their own invitations" ON friend_invitations
   FOR UPDATE USING (auth.uid() = inviter_id);
 
 -- RLS Policies for shared_rounds
+DROP POLICY IF EXISTS "Users can view shared rounds" ON shared_rounds;
 CREATE POLICY "Users can view shared rounds" ON shared_rounds
   FOR SELECT USING (
     auth.uid() IN (
@@ -72,6 +79,7 @@ CREATE POLICY "Users can view shared rounds" ON shared_rounds
     ) OR auth.uid() = shared_with
   );
 
+DROP POLICY IF EXISTS "Users can create shared rounds for their own rounds" ON shared_rounds;
 CREATE POLICY "Users can create shared rounds for their own rounds" ON shared_rounds
   FOR INSERT WITH CHECK (
     auth.uid() IN (
@@ -96,6 +104,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_set_invite_code ON friend_invitations;
 CREATE TRIGGER trigger_set_invite_code
   BEFORE INSERT ON friend_invitations
   FOR EACH ROW EXECUTE FUNCTION set_invite_code();
