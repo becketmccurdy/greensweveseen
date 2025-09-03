@@ -65,9 +65,10 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
       resolve();
     };
 
-    script.onerror = () => {
+    script.onerror = (error) => {
+      console.error('Google Maps script failed to load:', error);
       isLoading = false;
-      reject(new Error('Failed to load Google Maps API'));
+      reject(new Error('Failed to load Google Maps API - check API key and network connection'));
     };
 
     document.head.appendChild(script);

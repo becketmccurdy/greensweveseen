@@ -85,13 +85,15 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading Google Maps:', error);
-        setError('Google Maps API key not configured. Map functionality disabled.');
+        setError(`Failed to load Google Maps: ${error instanceof Error ? error.message : 'Unknown error'}`);
         setIsLoading(false);
       }
     };
 
     // Check if API key exists before trying to load map
     const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+    console.log('Google Maps API Key:', apiKey ? 'Present' : 'Missing');
+    
     if (!apiKey) {
       setError('Google Maps API key not configured. Please add REACT_APP_GOOGLE_MAPS_API_KEY to your environment variables.');
       setIsLoading(false);
