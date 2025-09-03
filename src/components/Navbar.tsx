@@ -1,4 +1,4 @@
-import { Box, Flex, Button, Link as ChakraLink } from '@chakra-ui/react';
+import { Box, Flex, Button, Link as ChakraLink, HStack, Text, Avatar } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthProvider';
@@ -13,35 +13,77 @@ const Navbar = () => {
   };
 
   return (
-    <Box bg="green.600" px={4} py={3}>
+    <Box bg="green.500" px={6} py={4}>
       <Flex justify="space-between" align="center" maxW="1200px" mx="auto">
-        <Flex gap={6}>
-          <ChakraLink as={RouterLink} to="/" color="white" fontWeight="bold">
-            GreenSWEveSeen
+        <HStack spacing={8}>
+          <ChakraLink as={RouterLink} to="/" color="white" fontWeight="bold" fontSize="xl">
+            📈 GreenTracker
           </ChakraLink>
           {user && (
-            <>
-              <ChakraLink as={RouterLink} to="/dashboard" color="white">
+            <HStack spacing={6}>
+              <Button
+                as={RouterLink}
+                to="/dashboard"
+                variant="ghost"
+                color="white"
+                leftIcon={<Text>📊</Text>}
+                _hover={{ bg: "green.600" }}
+                size="sm"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="green.400"
+              >
                 Dashboard
-              </ChakraLink>
-              <ChakraLink as={RouterLink} to="/track-course" color="white">
-                Track Course
-              </ChakraLink>
-              <ChakraLink as={RouterLink} to="/friends" color="white">
+              </Button>
+              <Button
+                as={RouterLink}
+                to="/track-course"
+                variant="ghost"
+                color="white"
+                leftIcon={<Text>⊕</Text>}
+                _hover={{ bg: "green.600" }}
+                size="sm"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="green.400"
+              >
+                Track Round
+              </Button>
+              <Button
+                as={RouterLink}
+                to="/friends"
+                variant="ghost"
+                color="white"
+                leftIcon={<Text>👥</Text>}
+                _hover={{ bg: "green.600" }}
+                size="sm"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="green.400"
+              >
                 Friends
-              </ChakraLink>
-              <ChakraLink as={RouterLink} to="/profile" color="white">
-                Profile
-              </ChakraLink>
-            </>
+              </Button>
+            </HStack>
           )}
-        </Flex>
+        </HStack>
         {user ? (
-          <Button colorScheme="whiteAlpha" onClick={handleLogout}>
-            Logout
-          </Button>
+          <HStack spacing={3}>
+            <Avatar size="sm" name={user.email} bg="green.300" color="green.800" />
+            <Text color="white" fontSize="sm" fontWeight="medium">
+              {user.email?.split('@')[0]?.toUpperCase() || 'JD'}
+            </Text>
+            <Button 
+              variant="ghost" 
+              color="white" 
+              size="sm"
+              onClick={handleLogout}
+              _hover={{ bg: "green.600" }}
+            >
+              Logout
+            </Button>
+          </HStack>
         ) : (
-          <Button as={RouterLink} to="/login" colorScheme="whiteAlpha">
+          <Button as={RouterLink} to="/login" colorScheme="whiteAlpha" size="sm">
             Login
           </Button>
         )}

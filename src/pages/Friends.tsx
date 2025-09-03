@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   CardBody,
+  CardHeader,
   Text,
   Input,
   useToast,
@@ -35,7 +36,10 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  useClipboard
+  useClipboard,
+  Flex,
+  Divider,
+  Stack
 } from '@chakra-ui/react';
 import { AddIcon, CopyIcon, CheckIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { supabase } from '../lib/supabase';
@@ -453,16 +457,37 @@ const Friends: React.FC = () => {
   };
 
   const FriendCard: React.FC<{ friend: Friend }> = ({ friend }) => (
-    <Card>
-      <CardBody>
-        <HStack spacing={3}>
-          <Avatar size="md" name={friend.friend_profile?.email} />
-          <VStack align="start" spacing={1} flex={1}>
-            <Text fontWeight="semibold">
-              {friend.friend_profile?.email || 'Unknown User'}
+    <Card 
+      borderRadius="xl" 
+      shadow="md" 
+      _hover={{ shadow: "lg", transform: "translateY(-2px)" }}
+      transition="all 0.2s"
+      border="1px solid"
+      borderColor="gray.200"
+    >
+      <CardBody p={6}>
+        <HStack spacing={4}>
+          <Avatar 
+            size="lg" 
+            name={friend.friend_profile?.email} 
+            bg="green.400" 
+            color="white"
+            fontWeight="bold"
+          />
+          <VStack align="start" spacing={2} flex={1}>
+            <Text fontWeight="bold" fontSize="lg" color="gray.800">
+              {friend.friend_profile?.email?.split('@')[0]?.toUpperCase() || 'UNKNOWN USER'}
             </Text>
-            <Text fontSize="sm" color="gray.500">
-              Friends since {new Date(friend.created_at).toLocaleDateString()}
+            <HStack spacing={2}>
+              <Badge colorScheme="green" variant="subtle" borderRadius="full" px={3}>
+                🤝 Friend
+              </Badge>
+              <Text fontSize="sm" color="gray.500">
+                Since {new Date(friend.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              </Text>
+            </HStack>
+            <Text fontSize="sm" color="gray.600">
+              {friend.friend_profile?.email || 'No email available'}
             </Text>
           </VStack>
           <Menu>
@@ -471,10 +496,12 @@ const Friends: React.FC = () => {
               icon={<ChevronDownIcon />}
               variant="ghost"
               size="sm"
+              color="gray.400"
+              _hover={{ color: "gray.600", bg: "gray.100" }}
             />
             <MenuList>
-              <MenuItem>View Rounds</MenuItem>
-              <MenuItem color="red.500">Remove Friend</MenuItem>
+              <MenuItem>👀 View Rounds</MenuItem>
+              <MenuItem color="red.500">🗑️ Remove Friend</MenuItem>
             </MenuList>
           </Menu>
         </HStack>
@@ -520,9 +547,12 @@ const Friends: React.FC = () => {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <VStack spacing={6} align="stretch">
+      <VStack spacing={8} align="stretch">
         <HStack justify="space-between">
-          <Heading>Friends</Heading>
+          <VStack align="start" spacing={1}>
+            <Heading size="xl" color="gray.800">👥 Friends & Social</Heading>
+            <Text color="gray.600">Connect with friends and share your golf journey</Text>
+          </VStack>
           <Button
             leftIcon={<AddIcon />}
             colorScheme="green"
@@ -703,46 +733,46 @@ const Friends: React.FC = () => {
                     </VStack>
                   </CardBody>
                 </Card>
-              ) : (
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-                  {friendRounds.map((round) => (
-                    <FriendRoundCard key={round.id} round={round} />
-                  ))}
-                </SimpleGrid>
-              )}
-            </TabPanel>
+                  ) : (
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                      {friendRounds.map((round) => (
+                        <FriendRoundCard key={round.id} round={round} />
+                      ))}
+                    </SimpleGrid>
+                  )}
+                </TabPanel>
 
-            <TabPanel px={0}>
-              {invitations.length === 0 ? (
-                <Card>
-                  <CardBody textAlign="center" py={12}>
-                    <VStack spacing={4}>
-                      <Text fontSize="xl" fontWeight="semibold" color="gray.600">
-                        No Active Invitations
-                      </Text>
-                      <Text color="gray.500">
-                        Create invitation links to share with friends
-                      </Text>
-                      <Button
-                        leftIcon={<AddIcon />}
-                        colorScheme="green"
-                        onClick={onOpen}
-                      >
-                        Create Invitation
-                      </Button>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              ) : (
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  {invitations.map((invitation) => (
-                    <InviteCard key={invitation.id} invitation={invitation} />
-                  ))}
-                </SimpleGrid>
-              )}
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+                <TabPanel px={0}>
+                  {invitations.length === 0 ? (
+                    <Card>
+                      <CardBody textAlign="center" py={12}>
+                        <VStack spacing={4}>
+                          <Text fontSize="xl" fontWeight="semibold" color="gray.600">
+                            No Active Invitations
+                          </Text>
+                          <Text color="gray.500">
+                            Create invitation links to share with friends
+                          </Text>
+                          <Button
+                            leftIcon={<AddIcon />}
+                            colorScheme="green"
+                            onClick={onOpen}
+                          >
+                            Create Invitation
+                          </Button>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                      {invitations.map((invitation) => (
+                        <InviteCard key={invitation.id} invitation={invitation} />
+                      ))}
+                    </SimpleGrid>
+                  )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
 
         <Modal isOpen={isOpen} onClose={onClose}>
           <ModalOverlay />

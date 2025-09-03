@@ -1,23 +1,16 @@
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Heading,
-  SimpleGrid,
-  Text,
+  VStack,
+  HStack,
+  Button,
   Card,
   CardBody,
-  Stack,
+  Text,
   useToast,
-  Button,
-  HStack,
-  VStack,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatGroup,
-  Skeleton,
-  Badge,
-  Box,
   Spinner,
+  Badge,
   IconButton,
   Menu,
   MenuButton,
@@ -34,10 +27,20 @@ import {
   TabList,
   TabPanels,
   Tab,
-  TabPanel
+  TabPanel,
+  SimpleGrid,
+  Box,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatGroup,
+  Image,
+  Flex,
+  Divider,
+  Skeleton
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import MapView from '../components/MapView';
@@ -60,6 +63,9 @@ interface Stats {
   totalRounds: number;
   recentTrend: 'improving' | 'steady' | 'declining' | null;
 }
+
+// Helper to fetch a course-themed image (Unsplash Source API)
+const getCourseImage = (name: string) => `https://source.unsplash.com/800x400/?golf,course,${encodeURIComponent(name)}`;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -170,38 +176,74 @@ const Dashboard = () => {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <VStack spacing={6} align="stretch">
+      <VStack spacing={8} align="stretch">
         <HStack justify="space-between">
-          <Heading>My Golf Rounds</Heading>
+          <VStack align="start" spacing={1}>
+            <Heading size="xl" color="gray.800">My Golf Dashboard</Heading>
+            <Text color="gray.600">Track your progress and improve your game</Text>
+          </VStack>
           <Button
             leftIcon={<AddIcon />}
             colorScheme="green"
+            size="lg"
             onClick={() => navigate('/track-course')}
+            borderRadius="md"
+            px={6}
           >
-            Track Round
+            + Track New Round
           </Button>
         </HStack>
 
-        <Card>
-          <CardBody>
-            <StatGroup>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+          <Card bg="gradient(to-br, green.50, green.100)" borderLeft="4px solid" borderLeftColor="green.500">
+            <CardBody>
               <Stat>
-                <StatLabel>Average Score</StatLabel>
-                <StatNumber>{isLoading ? <Skeleton height="24px" width="60px" /> : stats.averageScore || '-'}</StatNumber>
+                <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">Average Score</StatLabel>
+                <StatNumber fontSize="3xl" fontWeight="bold" color="green.600">
+                  {isLoading ? <Skeleton height="36px" width="60px" /> : stats.averageScore || '-'}
+                </StatNumber>
+                <StatHelpText fontSize="xs" color="gray.500">
+                  📊 Last 10 rounds
+                </StatHelpText>
               </Stat>
+            </CardBody>
+          </Card>
+          
+          <Card bg="gradient(to-br, blue.50, blue.100)" borderLeft="4px solid" borderLeftColor="blue.500">
+            <CardBody>
               <Stat>
-                <StatLabel>Best Score</StatLabel>
-                <StatNumber>{isLoading ? <Skeleton height="24px" width="60px" /> : stats.bestScore || '-'}</StatNumber>
+                <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">Total Rounds</StatLabel>
+                <StatNumber fontSize="3xl" fontWeight="bold" color="blue.600">
+                  {isLoading ? <Skeleton height="36px" width="60px" /> : stats.totalRounds}
+                </StatNumber>
+                <StatHelpText fontSize="xs" color="gray.500">
+                  🏌️ Rounds played
+                </StatHelpText>
               </Stat>
+            </CardBody>
+          </Card>
+          
+          <Card bg="gradient(to-br, purple.50, purple.100)" borderLeft="4px solid" borderLeftColor="purple.500">
+            <CardBody>
               <Stat>
-                <StatLabel>Total Rounds</StatLabel>
-                <StatNumber>{isLoading ? <Skeleton height="24px" width="60px" /> : stats.totalRounds}</StatNumber>
+                <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">Best Score</StatLabel>
+                <StatNumber fontSize="3xl" fontWeight="bold" color="purple.600">
+                  {isLoading ? <Skeleton height="36px" width="60px" /> : stats.bestScore || '-'}
+                </StatNumber>
+                <StatHelpText fontSize="xs" color="gray.500">
+                  🏆 Personal best
+                </StatHelpText>
               </Stat>
+            </CardBody>
+          </Card>
+          
+          <Card bg="gradient(to-br, orange.50, orange.100)" borderLeft="4px solid" borderLeftColor="orange.500">
+            <CardBody>
               <Stat>
-                <StatLabel>Recent Trend</StatLabel>
-                <StatNumber>
+                <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">Recent Trend</StatLabel>
+                <StatNumber fontSize="2xl" fontWeight="bold">
                   {isLoading ? (
-                    <Skeleton height="24px" width="60px" />
+                    <Skeleton height="32px" width="80px" />
                   ) : stats.recentTrend ? (
                     <Badge
                       colorScheme={{
@@ -209,15 +251,25 @@ const Dashboard = () => {
                         steady: 'blue',
                         declining: 'orange'
                       }[stats.recentTrend]}
+                      fontSize="sm"
+                      px={3}
+                      py={1}
+                      borderRadius="full"
                     >
-                      {stats.recentTrend.charAt(0).toUpperCase() + stats.recentTrend.slice(1)}
+                      {stats.recentTrend === 'improving' ? '📈 Improving' : 
+                       stats.recentTrend === 'steady' ? '➡️ Steady' : '📉 Declining'}
                     </Badge>
-                  ) : '-'}
+                  ) : (
+                    <Text color="gray.400">-</Text>
+                  )}
                 </StatNumber>
+                <StatHelpText fontSize="xs" color="gray.500">
+                  📈 Performance trend
+                </StatHelpText>
               </Stat>
-            </StatGroup>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
         <Tabs colorScheme="green">
           <TabList>
             <Tab>Rounds List</Tab>
@@ -252,20 +304,48 @@ const Dashboard = () => {
                   </CardBody>
                 </Card>
               ) : (
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
                 {rounds.map((round) => (
-                  <Card key={round.id}>
-                    <CardBody>
-                      <VStack align="stretch" spacing={3}>
-                        <HStack justify="space-between">
-                          <Heading size="md">{round.course_name}</Heading>
-                          <HStack spacing={2}>
+                  <Card 
+                    key={round.id} 
+                    borderRadius="xl" 
+                    shadow="md" 
+                    _hover={{ shadow: "lg", transform: "translateY(-2px)" }}
+                    transition="all 0.2s"
+                    border="1px solid"
+                    borderColor="gray.200"
+                  >
+                    <Image
+                      src={getCourseImage(round.course_name)}
+                      alt={`${round.course_name} course image`}
+                      borderTopRadius="xl"
+                      height="140px"
+                      width="100%"
+                      objectFit="cover"
+                    />
+                    <CardBody p={6}>
+                      <VStack align="stretch" spacing={4}>
+                        <HStack justify="space-between" align="start">
+                          <VStack align="start" spacing={1} flex={1}>
+                            <Heading size="md" color="gray.800" noOfLines={2}>
+                              🏌️ {round.course_name}
+                            </Heading>
+                            <Text fontSize="sm" color="gray.500">
+                              {new Date(round.date_played).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </Text>
+                          </VStack>
+                          <VStack spacing={2} align="end">
                             <Badge
-                              colorScheme={round.score <= stats.averageScore ? 'green' : 'orange'}
-                              fontSize="lg"
-                              px={3}
-                              py={1}
+                              colorScheme={round.score <= (stats.averageScore || 100) ? 'green' : 'orange'}
+                              fontSize="xl"
+                              px={4}
+                              py={2}
                               borderRadius="full"
+                              fontWeight="bold"
                             >
                               {round.score}
                             </Badge>
@@ -276,6 +356,8 @@ const Dashboard = () => {
                                 variant="ghost"
                                 size="sm"
                                 aria-label="Options"
+                                color="gray.400"
+                                _hover={{ color: "gray.600", bg: "gray.100" }}
                               />
                               <MenuList>
                                 <MenuItem
@@ -296,29 +378,46 @@ const Dashboard = () => {
                                 </MenuItem>
                               </MenuList>
                             </Menu>
-                          </HStack>
+                          </VStack>
                         </HStack>
-                        <VStack align="start" spacing={1}>
-                          <Text color="gray.600">
-                            {new Date(round.date_played).toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </Text>
+                        
+                        <Divider />
+                        
+                        <HStack spacing={4} justify="space-between">
                           {round.holes && (
-                            <Text fontSize="sm" color="gray.500">
-                              {round.holes} holes
-                            </Text>
+                            <HStack spacing={1}>
+                              <Text fontSize="sm" color="gray.500">⛳</Text>
+                              <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                                {round.holes} holes
+                              </Text>
+                            </HStack>
                           )}
-                        </VStack>
+                          {round.playing_partners.length > 0 && (
+                            <HStack spacing={1}>
+                              <Text fontSize="sm" color="gray.500">👥</Text>
+                              <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                                {round.playing_partners.length} player{round.playing_partners.length > 1 ? 's' : ''}
+                              </Text>
+                            </HStack>
+                          )}
+                        </HStack>
+                        
                         {round.playing_partners.length > 0 && (
                           <Box>
-                            <Text fontSize="sm" color="gray.500" mb={1}>Played with:</Text>
-                            <HStack spacing={2}>
+                            <Text fontSize="xs" color="gray.500" mb={2} textTransform="uppercase" letterSpacing="wide">
+                              Playing Partners
+                            </Text>
+                            <HStack spacing={2} flexWrap="wrap">
                               {round.playing_partners.map((partner, idx) => (
-                                <Badge key={idx} colorScheme="blue" variant="subtle">
+                                <Badge 
+                                  key={idx} 
+                                  colorScheme="blue" 
+                                  variant="subtle"
+                                  borderRadius="md"
+                                  px={2}
+                                  py={1}
+                                  fontSize="xs"
+                                >
                                   {partner}
                                 </Badge>
                               ))}

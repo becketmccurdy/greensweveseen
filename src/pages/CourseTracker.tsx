@@ -20,13 +20,21 @@ import {
   Checkbox,
   CheckboxGroup,
   Divider,
-  Badge
+  Badge,
+  SimpleGrid,
+  Card,
+  CardBody,
+  CardHeader,
+  Image
 } from '@chakra-ui/react';
 import { ChevronLeftIcon } from '@chakra-ui/icons';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { geocodeAddress } from '../utils/googleMaps';
+
+// Helper to fetch a course-themed image (Unsplash Source API)
+const getCourseImage = (name: string) => `https://source.unsplash.com/800x400/?golf,course,${encodeURIComponent(name)}`;
 
 const CourseTracker = () => {
   const [courseName, setCourseName] = useState('');
@@ -206,126 +214,180 @@ const CourseTracker = () => {
   };
 
   return (
-    <Container maxW="container.sm" py={8}>
-      <HStack mb={6} justify="space-between" width="full">
+    <Container maxW="container.lg" py={8}>
+      <HStack mb={8} justify="space-between" width="full">
         <IconButton
           aria-label="Back to dashboard"
           icon={<ChevronLeftIcon />}
           variant="ghost"
+          size="lg"
           onClick={() => navigate('/dashboard')}
         />
-        <Heading size="lg">{isEditing ? 'Edit Round' : 'Track New Round'}</Heading>
-        <Box w={8} /> {/* Spacer for alignment */}
-      </HStack>
-      <Box as="form" onSubmit={handleSubmit}>
-        <VStack spacing={4}>
-          <FormControl isRequired isInvalid={!!errors.courseName}>
-            <FormLabel>Course Name</FormLabel>
-            <Input
-              value={courseName}
-              onChange={(e) => {
-                setCourseName(e.target.value);
-                setErrors({...errors, courseName: ''});
-              }}
-              placeholder="Enter course name"
-            />
-            <FormErrorMessage>{errors.courseName}</FormErrorMessage>
-          </FormControl>
-
-          <FormControl isRequired isInvalid={!!errors.score}>
-            <FormLabel>Score</FormLabel>
-            <NumberInput min={1} max={199}>
-              <NumberInputField
-                value={score}
-                onChange={(e) => {
-                  setScore(e.target.value);
-                  setErrors({...errors, score: ''});
-                }}
-                placeholder="Enter your score (1-199)"
-              />
-            </NumberInput>
-            <FormErrorMessage>{errors.score}</FormErrorMessage>
-            <Text fontSize="sm" color="gray.500" mt={1}>
-              Enter your total score for the round (1-199)
-            </Text>
-          </FormControl>
-
-          <FormControl isRequired isInvalid={!!errors.date}>
-            <FormLabel>Date Played</FormLabel>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                setErrors({...errors, date: ''});
-              }}
-              max={new Date().toISOString().split('T')[0]}
-            />
-            <FormErrorMessage>{errors.date}</FormErrorMessage>
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Number of Holes</FormLabel>
-            <RadioGroup value={holes} onChange={setHoles}>
-              <Stack direction="row" spacing={6}>
-                <Radio value="9">9 holes</Radio>
-                <Radio value="18">18 holes</Radio>
-              </Stack>
-            </RadioGroup>
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Playing Partners</FormLabel>
-            <Input
-              value={playingPartners}
-              onChange={(e) => setPlayingPartners(e.target.value)}
-              placeholder="Enter names, separated by commas"
-            />
-            <Text fontSize="sm" color="gray.500" mt={1}>
-              Optional: List the people you played with
-            </Text>
-          </FormControl>
-
-          {friends.length > 0 && (
-            <>
-              <Divider />
-              <FormControl>
-                <FormLabel>Share with Friends</FormLabel>
-                <Text fontSize="sm" color="gray.600" mb={3}>
-                  Select friends to share this round with. They'll be able to see your score and details.
-                </Text>
-                <CheckboxGroup
-                  value={selectedFriends}
-                  onChange={(values) => setSelectedFriends(values as string[])}
-                >
-                  <VStack align="start" spacing={2}>
-                    {friends.map((friend) => (
-                      <Checkbox key={friend.friend_id} value={friend.friend_id}>
-                        <HStack spacing={2}>
-                          <Text>{friend.friend_profile?.email || 'Unknown Friend'}</Text>
-                          <Badge colorScheme="green" size="sm">Friend</Badge>
-                        </HStack>
-                      </Checkbox>
-                    ))}
-                  </VStack>
-                </CheckboxGroup>
-              </FormControl>
-            </>
-          )}
-
-          <Button 
-              type="submit" 
-              colorScheme="green" 
-              width="full"
-              isLoading={isSubmitting || isLoading || isGeocodingAddress}
-              loadingText={
-                isGeocodingAddress ? "Finding course location..." :
-                isEditing ? "Updating round..." : "Saving round..."
-              }>
-            {isEditing ? 'Update Round' : 'Save Round'}
-          </Button>
+        <VStack spacing={1}>
+          <Heading size="xl" color="gray.800">
+            {isEditing ? '✏️ Edit Round' : '⛳ Track New Round'}
+          </Heading>
+          <Text color="gray.600" fontSize="sm">
+            {isEditing ? 'Update your golf round details' : 'Record your latest golf round'}
+          </Text>
         </VStack>
-      </Box>
+        <Box w={12} /> {/* Spacer for alignment */}
+      </HStack>
+      
+      <Card shadow="lg" borderRadius="xl">
+        <CardHeader>
+          <Heading size="md" color="gray.700">Round Details</Heading>
+        </CardHeader>
+        <CardBody>
+          <Box as="form" onSubmit={handleSubmit}>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+              <FormControl isRequired isInvalid={!!errors.courseName}>
+                <FormLabel fontWeight="semibold" color="gray.700">🏌️ Course Name</FormLabel>
+                <Input
+                  value={courseName}
+                  onChange={(e) => {
+                    setCourseName(e.target.value);
+                    setErrors({...errors, courseName: ''});
+                  }}
+                  placeholder="Enter course name"
+                  size="lg"
+                  borderRadius="md"
+                />
+                <FormErrorMessage>{errors.courseName}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isRequired isInvalid={!!errors.score}>
+                <FormLabel fontWeight="semibold" color="gray.700">⛳ Score</FormLabel>
+                <NumberInput min={1} max={199}>
+                  <NumberInputField
+                    value={score}
+                    onChange={(e) => {
+                      setScore(e.target.value);
+                      setErrors({...errors, score: ''});
+                    }}
+                    placeholder="Enter your score (1-199)"
+                    borderRadius="md"
+                  />
+                </NumberInput>
+                <FormErrorMessage>{errors.score}</FormErrorMessage>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  Enter your total score for the round (1-199)
+                </Text>
+              </FormControl>
+
+              <FormControl isRequired isInvalid={!!errors.date}>
+                <FormLabel fontWeight="semibold" color="gray.700">📅 Date Played</FormLabel>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => {
+                    setDate(e.target.value);
+                    setErrors({...errors, date: ''});
+                  }}
+                  max={new Date().toISOString().split('T')[0]}
+                  size="lg"
+                  borderRadius="md"
+                />
+                <FormErrorMessage>{errors.date}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel fontWeight="semibold" color="gray.700">🕳️ Number of Holes</FormLabel>
+                <RadioGroup value={holes} onChange={setHoles}>
+                  <Stack direction="row" spacing={8}>
+                    <Radio value="9" size="lg" colorScheme="green">
+                      <Text fontWeight="medium">9 holes</Text>
+                    </Radio>
+                    <Radio value="18" size="lg" colorScheme="green">
+                      <Text fontWeight="medium">18 holes</Text>
+                    </Radio>
+                  </Stack>
+                </RadioGroup>
+              </FormControl>
+            </SimpleGrid>
+
+            <Divider my={6} />
+
+            <VStack spacing={6} align="stretch">
+              <Card variant="outline" borderRadius="xl">
+                <CardHeader pb={0}>
+                  <Heading size="sm" color="gray.700">🏞️ Course Preview</Heading>
+                </CardHeader>
+                <CardBody>
+                  {courseName ? (
+                    <Image
+                      src={getCourseImage(courseName)}
+                      alt={`${courseName} course preview`}
+                      borderRadius="md"
+                      height="200px"
+                      width="100%"
+                      objectFit="cover"
+                    />
+                  ) : (
+                    <Text color="gray.500">Enter a course name to preview a course image</Text>
+                  )}
+                </CardBody>
+              </Card>
+
+              <FormControl>
+                <FormLabel fontWeight="semibold" color="gray.700">👥 Playing Partners</FormLabel>
+                <Input
+                  value={playingPartners}
+                  onChange={(e) => setPlayingPartners(e.target.value)}
+                  placeholder="Enter names, separated by commas"
+                  size="lg"
+                  borderRadius="md"
+                />
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  Optional: List the people you played with
+                </Text>
+              </FormControl>
+
+              {friends.length > 0 && (
+                <FormControl>
+                  <FormLabel fontWeight="semibold" color="gray.700">🤝 Share with Friends</FormLabel>
+                  <Text fontSize="sm" color="gray.600" mb={3}>
+                    Select friends to share this round with. They'll be able to see your score and details.
+                  </Text>
+                  <CheckboxGroup
+                    value={selectedFriends}
+                    onChange={(values) => setSelectedFriends(values as string[])}
+                  >
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+                      {friends.map((friend) => (
+                        <Checkbox key={friend.friend_id} value={friend.friend_id} colorScheme="green">
+                          <HStack spacing={2}>
+                            <Text>{friend.friend_profile?.email || 'Unknown Friend'}</Text>
+                            <Badge colorScheme="green" size="sm" borderRadius="full">Friend</Badge>
+                          </HStack>
+                        </Checkbox>
+                      ))}
+                    </SimpleGrid>
+                  </CheckboxGroup>
+                </FormControl>
+              )}
+
+              <Button 
+                type="submit" 
+                colorScheme="green" 
+                size="xl"
+                py={6}
+                borderRadius="xl"
+                isLoading={isSubmitting || isLoading || isGeocodingAddress}
+                loadingText={
+                  isGeocodingAddress ? 'Finding course location...' : 
+                  isSubmitting ? (isEditing ? 'Updating...' : 'Saving...') : 
+                  'Loading...'
+                }
+                fontWeight="bold"
+                fontSize="lg"
+              >
+                {isEditing ? '✅ Update Round' : '💾 Save Round'}
+              </Button>
+            </VStack>
+          </Box>
+        </CardBody>
+      </Card>
     </Container>
   );
 };
