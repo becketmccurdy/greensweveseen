@@ -26,7 +26,7 @@ import { supabase } from '../lib/supabase';
 interface GolfRound {
   id: string;
   course_name: string;
-  date_played: string;
+  date: string;
   score: number;
   playing_partners: string[];
 }
@@ -85,7 +85,7 @@ const Dashboard = () => {
     const { data, error } = await supabase
       .from('golf_rounds')
       .select('*')
-      .order('date_played', { ascending: false });
+      .order('date', { ascending: false });
     
     if (error) {
       toast({
@@ -206,7 +206,7 @@ const Dashboard = () => {
                   </Badge>
                 </HStack>
                 <Text color="gray.600">
-                  {new Date(round.date_played).toLocaleDateString('en-US', {
+                  {new Date(round.date).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
