@@ -309,26 +309,6 @@ const CourseTracker = () => {
             <Divider my={6} />
 
             <VStack spacing={6} align="stretch">
-              <Card variant="outline" borderRadius="xl">
-                <CardHeader pb={0}>
-                  <Heading size="sm" color="gray.700">🏞️ Course Preview</Heading>
-                </CardHeader>
-                <CardBody>
-                  {courseName ? (
-                    <Image
-                      src={getCourseImage(courseName)}
-                      alt={`${courseName} course preview`}
-                      borderRadius="md"
-                      height="200px"
-                      width="100%"
-                      objectFit="cover"
-                    />
-                  ) : (
-                    <Text color="gray.500">Enter a course name to preview a course image</Text>
-                  )}
-                </CardBody>
-              </Card>
-
               <FormControl>
                 <FormLabel fontWeight="semibold" color="gray.700">👥 Playing Partners</FormLabel>
                 <Input

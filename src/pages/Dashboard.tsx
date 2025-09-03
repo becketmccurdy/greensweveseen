@@ -190,7 +190,7 @@ const Dashboard = () => {
             borderRadius="md"
             px={6}
           >
-            + Track New Round
+            Track New Round
           </Button>
         </HStack>
 
