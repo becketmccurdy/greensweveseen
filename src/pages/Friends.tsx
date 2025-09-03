@@ -126,7 +126,7 @@ const Friends: React.FC = () => {
         .from('friendships')
         .select(`
           *,
-          friend_profile:profiles(id, email)
+          friend_profile:profiles!friendships_friend_id_fkey(id, email)
         `)
         .eq('user_id', user.id)
         .eq('status', 'accepted');
@@ -186,7 +186,7 @@ const Friends: React.FC = () => {
           .from('golf_rounds')
           .select(`
             *,
-            user_profile:profiles(id, email)
+            user_profile:profiles!golf_rounds_user_id_fkey(id, email)
           `)
           .in('user_id', friendIds)
           .order('date_played', { ascending: false })
