@@ -64,7 +64,7 @@ const CourseTracker = () => {
       const { error } = await supabase.from('golf_rounds').insert({
         course_name: courseName,
         score: parseInt(score),
-        date: date,
+        date_played: date,
         playing_partners: playingPartners ? playingPartners.split(',').map(p => p.trim()) : [],
         user_id: user.id
       });
