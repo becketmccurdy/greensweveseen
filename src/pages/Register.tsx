@@ -48,11 +48,31 @@ const Register = () => {
       });
       navigate('/login');
     } catch (error: any) {
+      let errorMessage = 'An unexpected error occurred';
+      let errorTitle = 'Registration Failed';
+      
+      if (error.message.includes('already registered')) {
+        errorMessage = 'This email is already registered. Please login or use a different email.';
+        errorTitle = 'Email Already Exists';
+      } else if (error.message.includes('Password')) {
+        errorMessage = 'Password must be at least 6 characters long.';
+        errorTitle = 'Weak Password';
+      } else if (error.message.includes('valid email')) {
+        errorMessage = 'Please enter a valid email address.';
+        errorTitle = 'Invalid Email';
+      } else if (error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+        errorTitle = 'Connection Error';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: 'Error',
-        description: error.message,
+        title: errorTitle,
+        description: errorMessage,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
+        isClosable: true,
       });
     }
     setIsLoading(false);
@@ -102,6 +122,7 @@ const Register = () => {
             width="full"
             isLoading={isLoading}
             loadingText="Creating account..."
+            isDisabled={!email || !password || !confirmPassword}
           >
             Register
           </Button>

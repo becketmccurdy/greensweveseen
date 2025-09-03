@@ -51,11 +51,29 @@ const Login = () => {
       
       setIsLoading(false);
     } catch (error: any) {
+      let errorMessage = 'An unexpected error occurred';
+      let errorTitle = 'Login Failed';
+      
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        errorTitle = 'Invalid Credentials';
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = 'Please verify your email before logging in. Check your inbox for the verification link.';
+        errorTitle = 'Email Not Verified';
+        setIsVerificationSent(true);
+      } else if (error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+        errorTitle = 'Connection Error';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: 'Error',
-        description: error.message,
+        title: errorTitle,
+        description: errorMessage,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
+        isClosable: true,
       });
       setIsLoading(false);
     }
@@ -89,7 +107,14 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </FormControl>
-          <Button type="submit" colorScheme="green" width="full" isLoading={isLoading}>
+          <Button 
+            type="submit" 
+            colorScheme="green" 
+            width="full" 
+            isLoading={isLoading}
+            loadingText="Logging in..."
+            isDisabled={!email || !password}
+          >
             Login
           </Button>
           <Text>Don't have an account? <Button as={RouterLink} to="/register" variant="link" colorScheme="green">Register</Button></Text>
