@@ -52,6 +52,20 @@ interface Friend {
   };
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+}
+
+interface FriendRequest {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: 'pending' | 'accepted' | 'blocked';
+  created_at: string;
+  requester_profile?: UserProfile;
+}
+
 interface Invitation {
   id: string;
   invite_code: string;
@@ -77,26 +91,40 @@ const Friends: React.FC = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [friendRounds, setFriendRounds] = useState<FriendRound[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isSearchOpen,
+    onOpen: onSearchOpen,
+    onClose: onSearchClose,
+  } = useDisclosure();
   const toast = useToast();
 
   useEffect(() => {
     fetchFriends();
     fetchInvitations();
     fetchFriendRounds();
+    fetchFriendRequests();
   }, []);
 
   const fetchFriends = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from('friendships')
         .select(`
           *,
-          friend_profile:profiles!friendships_friend_id_fkey(id, email)
+          friend_profile:profiles(id, email)
         `)
+        .eq('user_id', user.id)
         .eq('status', 'accepted');
 
       if (error) throw error;
@@ -135,10 +163,14 @@ const Friends: React.FC = () => {
   const fetchFriendRounds = async () => {
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       // Get friend IDs
       const { data: friendships, error: friendsError } = await supabase
         .from('friendships')
         .select('friend_id')
+        .eq('user_id', user.id)
         .eq('status', 'accepted');
 
       if (friendsError) throw friendsError;
@@ -150,7 +182,7 @@ const Friends: React.FC = () => {
           .from('golf_rounds')
           .select(`
             *,
-            user_profile:profiles!golf_rounds_user_id_fkey(id, email)
+            user_profile:profiles(id, email)
           `)
           .in('user_id', friendIds)
           .order('date_played', { ascending: false })
@@ -170,6 +202,168 @@ const Friends: React.FC = () => {
       });
     }
     setIsLoading(false);
+  };
+
+  const fetchFriendRequests = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('friendships')
+        .select(`
+          *,
+          requester_profile:profiles!friendships_user_id_fkey(id, email)
+        `)
+        .eq('friend_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      setFriendRequests(data || []);
+    } catch (error: any) {
+      console.error('Error fetching friend requests:', error);
+    }
+  };
+
+  const searchUsers = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .ilike('email', `%${searchQuery}%`)
+        .neq('id', user.id)
+        .limit(10);
+
+      if (error) throw error;
+      
+      // Filter out existing friends and pending requests
+      const existingFriendIds = friends.map(f => f.friend_id);
+      const pendingRequestIds = friendRequests.map(r => r.user_id);
+      
+      const filteredResults = (data || []).filter(profile => 
+        !existingFriendIds.includes(profile.id) && 
+        !pendingRequestIds.includes(profile.id)
+      );
+      
+      setSearchResults(filteredResults);
+    } catch (error: any) {
+      toast({
+        title: 'Error searching users',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      });
+    }
+    setIsSearching(false);
+  };
+
+  const sendFriendRequest = async (friendId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('friendships')
+        .insert({
+          user_id: user.id,
+          friend_id: friendId,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Friend request sent!',
+        description: 'Your friend request has been sent',
+        status: 'success',
+        duration: 3000,
+      });
+
+      // Remove from search results
+      setSearchResults(prev => prev.filter(u => u.id !== friendId));
+    } catch (error: any) {
+      toast({
+        title: 'Error sending friend request',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const acceptFriendRequest = async (requestId: string, requesterId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Update the original request to accepted
+      const { error: updateError } = await supabase
+        .from('friendships')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+
+      if (updateError) throw updateError;
+
+      // Create the reciprocal friendship
+      const { error: insertError } = await supabase
+        .from('friendships')
+        .insert({
+          user_id: user.id,
+          friend_id: requesterId,
+          status: 'accepted'
+        });
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: 'Friend request accepted!',
+        description: 'You are now friends',
+        status: 'success',
+        duration: 3000,
+      });
+
+      fetchFriends();
+      fetchFriendRequests();
+    } catch (error: any) {
+      toast({
+        title: 'Error accepting friend request',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const declineFriendRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Friend request declined',
+        status: 'info',
+        duration: 3000,
+      });
+
+      fetchFriendRequests();
+    } catch (error: any) {
+      toast({
+        title: 'Error declining friend request',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      });
+    }
   };
 
   const createInvitation = async () => {
@@ -341,6 +535,8 @@ const Friends: React.FC = () => {
         <Tabs colorScheme="green">
           <TabList>
             <Tab>My Friends ({friends.length})</Tab>
+            <Tab>Friend Requests ({friendRequests.length})</Tab>
+            <Tab>Find Friends</Tab>
             <Tab>Friend Activity</Tab>
             <Tab>Invitations ({invitations.length})</Tab>
           </TabList>
@@ -355,15 +551,8 @@ const Friends: React.FC = () => {
                         No Friends Yet
                       </Text>
                       <Text color="gray.500">
-                        Invite your golf buddies to track rounds together!
+                        Search for friends or invite your golf buddies to track rounds together!
                       </Text>
-                      <Button
-                        leftIcon={<AddIcon />}
-                        colorScheme="green"
-                        onClick={onOpen}
-                      >
-                        Send Your First Invitation
-                      </Button>
                     </VStack>
                   </CardBody>
                 </Card>
@@ -374,6 +563,125 @@ const Friends: React.FC = () => {
                   ))}
                 </SimpleGrid>
               )}
+            </TabPanel>
+
+            <TabPanel px={0}>
+              {friendRequests.length === 0 ? (
+                <Card>
+                  <CardBody textAlign="center" py={12}>
+                    <VStack spacing={4}>
+                      <Text fontSize="xl" fontWeight="semibold" color="gray.600">
+                        No Friend Requests
+                      </Text>
+                      <Text color="gray.500">
+                        You don't have any pending friend requests
+                      </Text>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              ) : (
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  {friendRequests.map((request) => (
+                    <Card key={request.id}>
+                      <CardBody>
+                        <VStack align="stretch" spacing={3}>
+                          <HStack justify="space-between">
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="semibold">
+                                {request.requester_profile?.email || 'Unknown User'}
+                              </Text>
+                              <Text fontSize="sm" color="gray.500">
+                                Sent {new Date(request.created_at).toLocaleDateString()}
+                              </Text>
+                            </VStack>
+                            <Badge colorScheme="orange">Pending</Badge>
+                          </HStack>
+                          <HStack spacing={2}>
+                            <Button
+                              size="sm"
+                              colorScheme="green"
+                              onClick={() => acceptFriendRequest(request.id, request.user_id)}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => declineFriendRequest(request.id)}
+                            >
+                              Decline
+                            </Button>
+                          </HStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              )}
+            </TabPanel>
+
+            <TabPanel px={0}>
+              <VStack spacing={4} align="stretch">
+                <Card>
+                  <CardBody>
+                    <VStack spacing={4}>
+                      <Text fontSize="lg" fontWeight="semibold">
+                        Search for Friends
+                      </Text>
+                      <HStack w="full">
+                        <Input
+                          placeholder="Search by email address..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+                        />
+                        <Button
+                          colorScheme="green"
+                          onClick={searchUsers}
+                          isLoading={isSearching}
+                          loadingText="Searching..."
+                        >
+                          Search
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  </CardBody>
+                </Card>
+
+                {searchResults.length > 0 && (
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    {searchResults.map((user) => (
+                      <Card key={user.id}>
+                        <CardBody>
+                          <HStack justify="space-between">
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="semibold">{user.email}</Text>
+                              <Badge colorScheme="blue" size="sm">User</Badge>
+                            </VStack>
+                            <Button
+                              size="sm"
+                              colorScheme="green"
+                              onClick={() => sendFriendRequest(user.id)}
+                            >
+                              Add Friend
+                            </Button>
+                          </HStack>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </SimpleGrid>
+                )}
+
+                {searchQuery && searchResults.length === 0 && !isSearching && (
+                  <Card>
+                    <CardBody textAlign="center" py={8}>
+                      <Text color="gray.500">
+                        No users found matching "{searchQuery}"
+                      </Text>
+                    </CardBody>
+                  </Card>
+                )}
+              </VStack>
             </TabPanel>
 
             <TabPanel px={0}>

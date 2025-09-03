@@ -5,6 +5,7 @@
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 8);
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS longitude DECIMAL(11, 8);
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS course_address TEXT;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS holes INTEGER DEFAULT 18;
 
 -- Friends/relationships table
 CREATE TABLE IF NOT EXISTS friendships (

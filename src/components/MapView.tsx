@@ -1,6 +1,7 @@
 /// <reference types="google.maps" />
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Spinner, Text, VStack } from '@chakra-ui/react';
+import { loadGoogleMapsAPI } from '../utils/googleMaps';
 
 interface GolfRound {
   id: string;
@@ -25,18 +26,12 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const initializeMap = async () => {
+    const initMap = async () => {
       try {
-        // Check if Google Maps is loaded
-        if (!window.google) {
-          setError('Google Maps API not loaded');
-          setIsLoading(false);
-          return;
-        }
-
+        await loadGoogleMapsAPI();
+        
         if (!mapRef.current) return;
 
-        // Create map centered on US
         const mapInstance = new google.maps.Map(mapRef.current, {
           zoom: 4,
           center: { lat: 39.8283, lng: -98.5795 }, // Center of US
@@ -45,40 +40,25 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
 
         setMap(mapInstance);
 
-        // Add markers for rounds with coordinates
         const bounds = new google.maps.LatLngBounds();
         let hasValidCoordinates = false;
 
+        // Add markers for rounds with coordinates
         rounds.forEach((round) => {
           if (round.latitude && round.longitude) {
             const marker = new google.maps.Marker({
               position: { lat: round.latitude, lng: round.longitude },
               map: mapInstance,
               title: round.course_name,
-              icon: {
-                url: 'data:image/svg+xml;base64,' + btoa(`
-                  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="16" cy="16" r="12" fill="#38A169" stroke="#fff" stroke-width="2"/>
-                    <circle cx="16" cy="16" r="4" fill="#fff"/>
-                  </svg>
-                `),
-                scaledSize: new google.maps.Size(32, 32),
-              },
             });
 
-            // Info window for each marker
             const infoWindow = new google.maps.InfoWindow({
               content: `
-                <div style="padding: 8px; min-width: 200px;">
-                  <h3 style="margin: 0 0 8px 0; color: #2D3748; font-size: 16px; font-weight: bold;">
-                    ${round.course_name}
-                  </h3>
-                  <p style="margin: 4px 0; color: #4A5568; font-size: 14px;">
-                    <strong>Score:</strong> ${round.score} ${round.holes ? `(${round.holes} holes)` : ''}
-                  </p>
-                  <p style="margin: 4px 0; color: #4A5568; font-size: 14px;">
-                    <strong>Date:</strong> ${new Date(round.date_played).toLocaleDateString()}
-                  </p>
+                <div style="padding: 8px;">
+                  <h3 style="margin: 0 0 8px 0; color: #2D3748;">${round.course_name}</h3>
+                  <p style="margin: 4px 0; color: #4A5568;"><strong>Score:</strong> ${round.score}</p>
+                  <p style="margin: 4px 0; color: #4A5568;"><strong>Date:</strong> ${new Date(round.date_played).toLocaleDateString()}</p>
+                  ${round.holes ? `<p style="margin: 4px 0; color: #4A5568;"><strong>Holes:</strong> ${round.holes}</p>` : ''}
                 </div>
               `,
             });
@@ -103,14 +83,22 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
         }
 
         setIsLoading(false);
-      } catch (err) {
-        console.error('Error initializing map:', err);
-        setError('Failed to load map');
+      } catch (error) {
+        console.error('Error loading Google Maps:', error);
+        setError('Google Maps API key not configured. Map functionality disabled.');
         setIsLoading(false);
       }
     };
 
-    initializeMap();
+    // Check if API key exists before trying to load map
+    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      setError('Google Maps API key not configured. Please add REACT_APP_GOOGLE_MAPS_API_KEY to your environment variables.');
+      setIsLoading(false);
+      return;
+    }
+
+    initMap();
   }, [rounds]);
 
   if (isLoading) {

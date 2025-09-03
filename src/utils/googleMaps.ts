@@ -33,6 +33,14 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
 
     isLoading = true;
 
+    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn('Google Maps API key not found. Map functionality will be disabled.');
+      isLoading = false;
+      reject(new Error('Google Maps API key not found'));
+      return;
+    }
+
     // Check if script already exists
     const existingScript = document.getElementById('google-maps-script');
     if (existingScript) {
