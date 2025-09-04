@@ -20,11 +20,12 @@ model UserProfile {
   updatedAt DateTime @updatedAt
 
   // Relations
-  rounds      Round[]
-  scores      Score[]
-  friendships Friendship[] @relation("UserFriendships")
-  friendOf    Friendship[] @relation("FriendOf")
-  activities  FriendActivity[]
+  rounds         Round[]
+  scores         Score[]
+  createdCourses Course[]         @relation("CreatedCourses")
+  friendships    Friendship[]     @relation("UserFriendships")
+  friendOf       Friendship[]     @relation("FriendOf")
+  activities     FriendActivity[]
 
   @@map("user_profiles")
 }
@@ -38,11 +39,13 @@ model Course {
   rating      Float?
   slope       Int?
   description String?
+  createdById String   // User who created this course
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  rounds Round[]
+  createdBy UserProfile @relation("CreatedCourses", fields: [createdById], references: [userId], onDelete: Cascade)
+  rounds    Round[]
 
   @@map("courses")
 }
