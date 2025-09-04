@@ -23,12 +23,13 @@ async function getRound(id: string, userId: string) {
 }
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function RoundDetailPage({ params }: PageProps) {
+  const { id } = await params
   const userProfile = await getUserProfile()
-  const round = await getRound(params.id, userProfile.userId)
+  const round = await getRound(id, userProfile.userId)
 
   if (!round) {
     return (

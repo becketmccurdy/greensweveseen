@@ -27,13 +27,14 @@ async function getCourses() {
 }
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function EditRoundPage({ params }: PageProps) {
+  const { id } = await params
   const userProfile = await getUserProfile()
   const [round, courses] = await Promise.all([
-    getRound(params.id, userProfile.userId),
+    getRound(id, userProfile.userId),
     getCourses()
   ])
 
