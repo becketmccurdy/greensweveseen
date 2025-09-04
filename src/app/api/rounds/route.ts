@@ -21,8 +21,11 @@ export async function POST(request: NextRequest) {
     
     const round = await prisma.round.create({
       data: {
-        ...validatedData,
         userId: user.id,
+        courseId: validatedData.courseId,
+        date: validatedData.date,
+        totalScore: validatedData.score,
+        notes: validatedData.notes,
       },
       include: {
         course: true,
