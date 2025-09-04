@@ -1,6 +1,6 @@
-import { initializeApp, FirebaseApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth'
-import { getFirestore, Firestore } from 'firebase/firestore'
+import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,28 +11,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-// Check if Firebase config is properly set
-const isFirebaseConfigured = firebaseConfig.apiKey && 
-  firebaseConfig.authDomain && 
-  firebaseConfig.projectId &&
-  !firebaseConfig.apiKey.includes('your_') // Check for placeholder values
+// Initialize Firebase
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 
-let app: FirebaseApp | null = null
-let auth: Auth | null = null
-let db: Firestore | null = null
-let googleProvider: GoogleAuthProvider | null = null
-
-if (isFirebaseConfigured) {
-  try {
-    // Initialize Firebase only if properly configured
-    app = initializeApp(firebaseConfig)
-    auth = getAuth(app)
-    db = getFirestore(app)
-    googleProvider = new GoogleAuthProvider()
-  } catch (error) {
-    console.warn('Firebase initialization failed:', error)
-  }
-}
-
-export { auth, db, googleProvider }
-export default app
+// Initialize Firebase services
+export const auth = getAuth(app)
+export const db = getFirestore(app)
+export { app }

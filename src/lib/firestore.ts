@@ -1,283 +1,149 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  addDoc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   limit,
-  Timestamp 
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore'
 import { db } from './firebase'
 
-// Types
 export interface Course {
   id?: string
   name: string
-  location: string
+  location: string | null
   par: number
   holes: number
-  rating?: number
-  slope?: number
-  description?: string
-  createdById: string
+  userId: string
   createdAt: Date
-  updatedAt: Date
 }
 
 export interface Round {
   id?: string
+  userId: string
   courseId: string
-  courseName?: string
+  courseName: string
   date: Date
-  score: number
-  putts?: number
-  fairwaysHit?: number
-  greensInRegulation?: number
-  notes?: string
-  createdById: string
+  totalScore: number
+  totalPar: number
+  weather?: string | null
+  notes?: string | null
   createdAt: Date
-  updatedAt: Date
 }
 
 export interface UserProfile {
-  id?: string
+  uid: string
   email: string
-  name?: string
-  handicap?: number
+  displayName?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  photoURL?: string | null
   createdAt: Date
-  updatedAt: Date
+  handicap?: number | null
 }
 
 // User Profile functions
-export const createUserProfile = async (userId: string, email: string, name?: string): Promise<UserProfile> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  const userProfile: Omit<UserProfile, 'id'> = {
-    email,
-    name: name || email.split('@')[0],
-    handicap: 0,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-  
-  const docRef = doc(db, 'users', userId)
-  await updateDoc(docRef, userProfile as any)
-  
-  return { id: userId, ...userProfile }
+export const createUserProfile = async (profile: Omit<UserProfile, 'createdAt'>) => {
+  const userRef = doc(db, 'users', profile.uid)
+  await setDoc(userRef, {
+    ...profile,
+    createdAt: serverTimestamp()
+  })
 }
 
-export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  if (!db) throw new Error('Firestore not initialized')
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  const userRef = doc(db, 'users', uid)
+  const userSnap = await getDoc(userRef)
   
-  const docRef = doc(db, 'users', userId)
-  const docSnap = await getDoc(docRef)
-  
-  if (docSnap.exists()) {
-    const data = docSnap.data()
+  if (userSnap.exists()) {
+    const data = userSnap.data()
     return {
-      id: docSnap.id,
-      email: data.email,
-      name: data.name,
-      handicap: data.handicap,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date()
-    }
+      ...data,
+      createdAt: data.createdAt?.toDate() || new Date()
+    } as UserProfile
   }
-  
   return null
 }
 
 // Course functions
-export const createCourse = async (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>): Promise<Course> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  const courseData = {
+export const createCourse = async (course: Omit<Course, 'id' | 'createdAt'>) => {
+  const docRef = await addDoc(collection(db, 'courses'), {
     ...course,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now()
-  }
-  
-  const docRef = await addDoc(collection(db, 'courses'), courseData)
-  
-  return {
-    id: docRef.id,
-    ...course,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
+    createdAt: serverTimestamp()
+  })
+  return docRef.id
 }
 
-export const getCourses = async (userId?: string): Promise<Course[]> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  let q = query(collection(db, 'courses'), orderBy('name'))
-  
-  if (userId) {
-    q = query(collection(db, 'courses'), where('createdById', '==', userId), orderBy('name'))
-  }
+export const getCourses = async (userId: string): Promise<Course[]> => {
+  const q = query(
+    collection(db, 'courses'),
+    where('userId', '==', userId),
+    orderBy('name', 'asc')
+  )
   
   const querySnapshot = await getDocs(q)
-  const courses: Course[] = []
-  
-  querySnapshot.forEach((doc) => {
-    const data = doc.data()
-    courses.push({
-      id: doc.id,
-      name: data.name,
-      location: data.location,
-      par: data.par,
-      holes: data.holes,
-      rating: data.rating,
-      slope: data.slope,
-      description: data.description,
-      createdById: data.createdById,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date()
-    })
-  })
-  
-  return courses
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date()
+  })) as Course[]
 }
 
 // Round functions
-export const createRound = async (round: Omit<Round, 'id' | 'createdAt' | 'updatedAt'>): Promise<Round> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  const roundData = {
+export const createRound = async (round: Omit<Round, 'id' | 'createdAt'>) => {
+  const docRef = await addDoc(collection(db, 'rounds'), {
     ...round,
-    date: Timestamp.fromDate(round.date),
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now()
-  }
-  
-  const docRef = await addDoc(collection(db, 'rounds'), roundData)
-  
-  return {
-    id: docRef.id,
-    ...round,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
+    createdAt: serverTimestamp()
+  })
+  return docRef.id
 }
 
 export const getRounds = async (userId: string): Promise<Round[]> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
   const q = query(
-    collection(db, 'rounds'), 
-    where('createdById', '==', userId), 
+    collection(db, 'rounds'),
+    where('userId', '==', userId),
     orderBy('date', 'desc')
   )
   
   const querySnapshot = await getDocs(q)
-  const rounds: Round[] = []
-  
-  querySnapshot.forEach((doc) => {
-    const data = doc.data()
-    rounds.push({
-      id: doc.id,
-      courseId: data.courseId,
-      courseName: data.courseName,
-      date: data.date?.toDate() || new Date(),
-      score: data.score,
-      putts: data.putts,
-      fairwaysHit: data.fairwaysHit,
-      greensInRegulation: data.greensInRegulation,
-      notes: data.notes,
-      createdById: data.createdById,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date()
-    })
-  })
-  
-  return rounds
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    date: doc.data().date?.toDate() || new Date(),
+    createdAt: doc.data().createdAt?.toDate() || new Date()
+  })) as Round[]
 }
 
 export const getRound = async (roundId: string): Promise<Round | null> => {
-  if (!db) throw new Error('Firestore not initialized')
+  const roundRef = doc(db, 'rounds', roundId)
+  const roundSnap = await getDoc(roundRef)
   
-  const docRef = doc(db, 'rounds', roundId)
-  const docSnap = await getDoc(docRef)
-  
-  if (docSnap.exists()) {
-    const data = docSnap.data()
+  if (roundSnap.exists()) {
+    const data = roundSnap.data()
     return {
-      id: docSnap.id,
-      courseId: data.courseId,
-      courseName: data.courseName,
+      id: roundSnap.id,
+      ...data,
       date: data.date?.toDate() || new Date(),
-      score: data.score,
-      putts: data.putts,
-      fairwaysHit: data.fairwaysHit,
-      greensInRegulation: data.greensInRegulation,
-      notes: data.notes,
-      createdById: data.createdById,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date()
-    }
+      createdAt: data.createdAt?.toDate() || new Date()
+    } as Round
   }
-  
   return null
 }
 
-export const updateRound = async (roundId: string, updates: Partial<Round>): Promise<void> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  const updateData: any = {
-    ...updates,
-    updatedAt: Timestamp.now()
-  }
-  
-  if (updates.date) {
-    updateData.date = Timestamp.fromDate(updates.date)
-  }
-  
-  const docRef = doc(db, 'rounds', roundId)
-  await updateDoc(docRef, updateData)
+export const updateRound = async (roundId: string, updates: Partial<Round>) => {
+  const roundRef = doc(db, 'rounds', roundId)
+  await updateDoc(roundRef, updates)
 }
 
-export const deleteRound = async (roundId: string): Promise<void> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  const docRef = doc(db, 'rounds', roundId)
-  await deleteDoc(docRef)
-}
-
-export const getRecentRounds = async (userId: string, limitCount: number = 5): Promise<Round[]> => {
-  if (!db) throw new Error('Firestore not initialized')
-  
-  const q = query(
-    collection(db, 'rounds'), 
-    where('createdById', '==', userId), 
-    orderBy('date', 'desc'),
-    limit(limitCount)
-  )
-  
-  const querySnapshot = await getDocs(q)
-  const rounds: Round[] = []
-  
-  querySnapshot.forEach((doc) => {
-    const data = doc.data()
-    rounds.push({
-      id: doc.id,
-      courseId: data.courseId,
-      courseName: data.courseName,
-      date: data.date?.toDate() || new Date(),
-      score: data.score,
-      putts: data.putts,
-      fairwaysHit: data.fairwaysHit,
-      greensInRegulation: data.greensInRegulation,
-      notes: data.notes,
-      createdById: data.createdById,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date()
-    })
-  })
-  
-  return rounds
+export const deleteRound = async (roundId: string) => {
+  const roundRef = doc(db, 'rounds', roundId)
+  await deleteDoc(roundRef)
 }

@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
-import { getUserProfile, getRounds } from '@/lib/firestore'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useAuth } from '../../../contexts/auth-context'
+import { getUserProfile, getRounds } from '../../../lib/firestore'
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
+import { Label } from '../../../components/ui/label'
 import { User, Mail, Trophy } from 'lucide-react'
-import type { UserProfile, Round } from '@/lib/firestore'
+import type { UserProfile, Round } from '../../../lib/firestore'
 
 interface ProfileStats {
   totalRounds: number

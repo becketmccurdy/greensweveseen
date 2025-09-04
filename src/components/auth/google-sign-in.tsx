@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { signInWithGoogle } from '@/lib/firebase-auth'
+import { createUserProfile } from '@/lib/firestore'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -21,17 +22,19 @@ export function GoogleSignIn() {
       }
 
       if (user) {
-        // Create or update user profile in database
-        await fetch('/api/auth/firebase-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        // Create or update user profile in Firestore
+        try {
+          await createUserProfile({
             uid: user.uid,
-            email: user.email,
+            email: user.email!,
             displayName: user.displayName,
+            firstName: user.displayName?.split(' ')[0] || null,
+            lastName: user.displayName?.split(' ')[1] || null,
             photoURL: user.photoURL
           })
-        })
+        } catch (profileError) {
+          console.log('Profile already exists or error creating profile:', profileError)
+        }
         
         toast.success('Successfully signed in!')
         router.push('/dashboard')

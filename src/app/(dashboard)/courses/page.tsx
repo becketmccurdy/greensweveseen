@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
-import { getCourses } from '@/lib/firestore'
-import { CourseList, type CourseListItem } from '@/components/courses/course-list'
-import { EmptyCourses } from '@/components/dashboard/empty-states'
+import { useAuth } from '../../../contexts/auth-context'
+import { getCourses } from '../../../lib/firestore'
+import { CourseList, type CourseListItem } from '../../../components/courses/course-list'
+import { EmptyCourses } from '../../../components/dashboard/empty-states'
 
 interface Course {
   id: string
