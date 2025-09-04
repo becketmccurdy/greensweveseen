@@ -64,7 +64,7 @@ export default function ProfilePage() {
         })
       } else {
         const totalRounds = rounds.length
-        const scores = rounds.map(r => r.score)
+        const scores = rounds.map(r => r.totalScore)
         const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
         const bestScore = Math.min(...scores)
         const coursesPlayed = new Set(rounds.map(r => r.courseId)).size
