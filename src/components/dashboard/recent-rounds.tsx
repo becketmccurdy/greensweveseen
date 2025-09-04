@@ -13,11 +13,6 @@ interface Round {
     name: string
     location: string | null
   }
-  scores: Array<{
-    hole: number
-    strokes: number
-    par: number
-  }>
 }
 
 interface RecentRoundsProps {

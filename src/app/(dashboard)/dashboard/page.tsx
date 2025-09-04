@@ -1,71 +1,67 @@
 import { getUserProfile } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { KPICards } from '@/components/dashboard/kpi-cards'
 import { RecentRounds } from '@/components/dashboard/recent-rounds'
 
-async function getDashboardData(userId: string) {
-  const [rounds, totalRounds, bestScore, averageScore] = await Promise.all([
-    // Recent rounds with course info
-    prisma.round.findMany({
-      where: { userId },
-      include: {
-        course: true,
-        scores: true,
-      },
-      orderBy: { date: 'desc' },
-      take: 5,
-    }),
-    // Total rounds count
-    prisma.round.count({
-      where: { userId },
-    }),
-    // Best score
-    prisma.round.findFirst({
-      where: { userId },
-      orderBy: { totalScore: 'asc' },
-      select: { totalScore: true },
-    }),
-    // Average score calculation
-    prisma.round.aggregate({
-      where: { userId },
-      _avg: { totalScore: true },
-    }),
-  ])
+async function getRecentRounds(userId: string) {
+  const { prisma } = await import('@/lib/prisma')
+  return await prisma.round.findMany({
+    where: { userId },
+    include: { course: true },
+    orderBy: { date: 'desc' },
+    take: 5
+  })
+}
+
+async function getKPIData(userId: string) {
+  const { prisma } = await import('@/lib/prisma')
+  const rounds = await prisma.round.findMany({
+    where: { userId },
+    include: { course: true }
+  })
+
+  if (rounds.length === 0) {
+    return {
+      totalRounds: 0,
+      bestScore: null,
+      averageScore: null,
+      handicap: null
+    }
+  }
+
+  const totalRounds = rounds.length
+  const scores = rounds.map(r => r.totalScore)
+  const bestScore = Math.min(...scores)
+  const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+  
+  // Simple handicap calculation (average score - course par)
+  const avgPar = rounds.reduce((sum, round) => sum + round.course.par, 0) / rounds.length
+  const handicap = Math.round(averageScore - avgPar)
 
   return {
-    rounds,
     totalRounds,
-    bestScore: bestScore?.totalScore || null,
-    averageScore: averageScore._avg.totalScore || null,
+    bestScore,
+    averageScore,
+    handicap: handicap > 0 ? handicap : 0
   }
 }
 
 export default async function DashboardPage() {
-  const profile = await getUserProfile()
-  const dashboardData = await getDashboardData(profile.userId)
+  const userProfile = await getUserProfile()
+  const recentRounds = await getRecentRounds(userProfile.userId)
+  const kpiData = await getKPIData(userProfile.userId)
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-          Welcome back, {profile.name}!
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back, {userProfile.name}!
         </h1>
-        <p className="text-gray-600 mt-1">
-          Here's how your golf game is progressing
-        </p>
+        <p className="text-gray-600">Here's your golf performance overview</p>
       </div>
 
-      {/* KPI Cards */}
-      <KPICards
-        totalRounds={dashboardData.totalRounds}
-        bestScore={dashboardData.bestScore}
-        averageScore={dashboardData.averageScore}
-        handicap={profile.handicap}
-      />
-
-      {/* Recent Rounds */}
-      <RecentRounds rounds={dashboardData.rounds} />
+      <KPICards {...kpiData} />
+      
+      <RecentRounds rounds={recentRounds} />
     </div>
   )
 }
