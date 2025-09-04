@@ -10,8 +10,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      // Force a hard redirect to ensure session is properly set
+      return NextResponse.redirect(`${origin}${next}`, { status: 302 })
     }
+    console.error('Auth callback error:', error)
   }
 
   // return the user to an error page with instructions

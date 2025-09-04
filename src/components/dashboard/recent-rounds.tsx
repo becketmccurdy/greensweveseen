@@ -31,9 +31,9 @@ export function RecentRounds({ rounds }: RecentRoundsProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Rounds</CardTitle>
-        <Button asChild size="sm">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base font-medium">Recent Rounds</CardTitle>
+        <Button variant="outline" size="sm" asChild>
           <Link href="/rounds/new">
             <Plus className="h-4 w-4 mr-2" />
             New Round
@@ -42,12 +42,8 @@ export function RecentRounds({ rounds }: RecentRoundsProps) {
       </CardHeader>
       <CardContent>
         {rounds.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-gray-400 mb-4">
-              <Calendar className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No rounds yet</h3>
-            <p className="text-gray-600 mb-4">Start tracking your golf scores today!</p>
+          <div className="text-center py-6">
+            <p className="text-gray-500 mb-4">No rounds recorded yet</p>
             <Button asChild>
               <Link href="/rounds/new">
                 <Plus className="h-4 w-4 mr-2" />
@@ -58,38 +54,36 @@ export function RecentRounds({ rounds }: RecentRoundsProps) {
         ) : (
           <div className="space-y-4">
             {rounds.map((round) => (
-              <div
-                key={round.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-gray-900">{round.course.name}</h4>
-                    {round.course.location && (
-                      <div className="flex items-center text-sm text-gray-500">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {round.course.location}
+              <Link key={round.id} href={`/rounds/${round.id}`}>
+                <div className="flex items-center justify-between hover:bg-gray-50 p-2 -m-2 rounded-lg transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className={`px-2 py-1 rounded-full text-sm font-medium ${getScoreColor(round.totalScore, round.totalPar)}`}>
+                      {round.totalScore}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{round.course.name}</h3>
+                      <div className="flex items-center text-sm text-gray-500 space-x-4">
+                        <span className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {format(new Date(round.date), 'MMM d')}
+                        </span>
+                        {round.course.location && (
+                          <span className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {round.course.location}
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {format(new Date(round.date), 'MMM d, yyyy')}
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">
+                      {round.totalScore > round.totalPar ? '+' : ''}{round.totalScore - round.totalPar} to par
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(round.totalScore, round.totalPar)}`}>
-                    {round.totalScore}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {round.totalScore > round.totalPar ? '+' : ''}{round.totalScore - round.totalPar}
-                  </div>
-                </div>
-              </div>
+              </Link>
             ))}
-            
             {rounds.length >= 5 && (
               <div className="text-center pt-4">
                 <Button variant="outline" asChild>
