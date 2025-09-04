@@ -14,8 +14,8 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation user={{
-        firstName: user?.user_metadata?.name?.split(' ')[0] || user?.email?.split('@')[0] || '',
-        lastName: user?.user_metadata?.name?.split(' ')[1] || '',
+        firstName: user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || '',
+        lastName: user?.displayName?.split(' ')[1] || '',
         email: user?.email || ''
       }} />
       <main className="pb-16 md:pb-0 md:pl-64">
