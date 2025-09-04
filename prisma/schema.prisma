@@ -1,0 +1,132 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique // Supabase auth user ID
+  email     String   @unique
+  name      String?
+  handicap  Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  rounds      Round[]
+  scores      Score[]
+  friendships Friendship[] @relation("UserFriendships")
+  friendOf    Friendship[] @relation("FriendOf")
+  activities  FriendActivity[]
+
+  @@map("user_profiles")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  par         Int      @default(72)
+  holes       Int      @default(18)
+  rating      Float?
+  slope       Int?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  rounds Round[]
+
+  @@map("courses")
+}
+
+model Round {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  date      DateTime @default(now())
+  totalScore Int
+  totalPar   Int      @default(72)
+  weather    String?
+  notes      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  course Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  scores Score[]
+
+  @@map("rounds")
+}
+
+model Score {
+  id       String @id @default(cuid())
+  roundId  String
+  userId   String
+  hole     Int
+  strokes  Int
+  par      Int
+  putts    Int?
+  fairway  Boolean?
+  gir      Boolean? // Green in regulation
+  notes    String?
+
+  // Relations
+  round Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  user  UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([roundId, hole])
+  @@map("scores")
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   UserProfile @relation("UserFriendships", fields: [userId], references: [userId], onDelete: Cascade)
+  friend UserProfile @relation("FriendOf", fields: [friendId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@map("friendships")
+}
+
+model FriendActivity {
+  id        String       @id @default(cuid())
+  userId    String
+  type      ActivityType
+  data      Json // Flexible data for different activity types
+  createdAt DateTime     @default(now())
+
+  // Relations
+  user UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("friend_activities")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum ActivityType {
+  ROUND_COMPLETED
+  PERSONAL_BEST
+  HOLE_IN_ONE
+  EAGLE
+  BIRDIE
+  COURSE_RECORD
+}
