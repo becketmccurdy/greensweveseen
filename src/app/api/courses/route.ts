@@ -1,30 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserProfile } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const createCourseSchema = z.object({
-  name: z.string().min(1),
-  location: z.string().nullable().optional(),
-  par: z.number().min(60).max(80).default(72),
+  name: z.string().min(1, 'Course name is required'),
+  location: z.string().optional(),
+  par: z.number().int().min(1).max(200).optional(),
+  holes: z.number().int().min(1).max(36).optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
-    await getUserProfile() // Ensure user is authenticated
+    // Dynamic imports to avoid build-time dependency issues
+    const { requireAuth } = await import('@/lib/auth')
+    const { prisma } = await import('@/lib/prisma')
+    
+    const user = await requireAuth()
     const body = await request.json()
-    const data = createCourseSchema.parse(body)
-
+    
+    const validatedData = createCourseSchema.parse(body)
+    
     const course = await prisma.course.create({
       data: {
-        name: data.name,
-        location: data.location,
-        par: data.par,
-      },
+        ...validatedData,
+        createdById: user.id,
+      }
     })
-
-    return NextResponse.json(course)
+    
+    return NextResponse.json(course, { status: 201 })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: error.errors },
+        { status: 400 }
+      )
+    }
+    
     console.error('Error creating course:', error)
     return NextResponse.json(
       { error: 'Failed to create course' },
