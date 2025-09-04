@@ -1,21 +1,30 @@
-import { redirect } from 'next/navigation'
+'use client'
 
-async function getUser() {
-  try {
-    const { getCurrentUser } = await import('@/lib/auth')
-    return await getCurrentUser()
-  } catch (error) {
-    console.error('Error getting user:', error)
-    return null
-  }
-}
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 
-export default async function HomePage() {
-  const user = await getUser()
+export default function HomePage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
   
-  if (user) {
-    redirect('/dashboard')
-  } else {
-    redirect('/login')
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        router.push('/dashboard')
+      } else {
+        router.push('/login')
+      }
+    }
+  }, [user, loading, router])
+  
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
   }
+  
+  return null
 }

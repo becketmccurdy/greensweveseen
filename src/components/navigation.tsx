@@ -19,7 +19,8 @@ import {
 
 interface NavigationProps {
   user: {
-    name: string | null
+    firstName: string | null
+    lastName: string | null
     email: string
   }
 }
@@ -101,7 +102,7 @@ export function Navigation({ user }: NavigationProps) {
           {/* User info and sign out */}
           <div className="border-t border-gray-200 p-4">
             <div className="mb-3">
-              <p className="text-sm font-medium text-gray-900">{user.name}</p>
+              <p className="text-sm font-medium text-gray-900">{user.firstName || user.email}</p>
               <p className="text-xs text-gray-500">{user.email}</p>
             </div>
             <Button

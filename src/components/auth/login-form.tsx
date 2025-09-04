@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { GoogleSignIn } from './google-sign-in'
 import { useRouter } from 'next/navigation'
 
 export function LoginForm() {
@@ -40,30 +41,48 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+    <div className="space-y-6">
+      {/* Google Sign In */}
+      <GoogleSignIn />
+      
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            Or continue with email
+          </span>
+        </div>
       </div>
       
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Sending...' : 'Send Magic Link'}
-      </Button>
-      
-      {message && (
-        <p className={`text-sm text-center ${
-          message.includes('Check your email') ? 'text-green-600' : 'text-red-600'
-        }`}>
-          {message}
-        </p>
-      )}
-    </form>
+      {/* Email Magic Link Form */}
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? 'Sending...' : 'Send Magic Link'}
+        </Button>
+        
+        {message && (
+          <p className={`text-sm text-center ${
+            message.includes('Check your email') ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {message}
+          </p>
+        )}
+      </form>
+    </div>
   )
 }
