@@ -32,8 +32,13 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
         await loadGoogleMapsAPI();
         console.log('Google Maps API loaded successfully');
         
+        // Wait a bit for the DOM to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         if (!mapRef.current) {
           console.error('Map container ref not found');
+          setError('Map container not available');
+          setIsLoading(false);
           return;
         }
 
@@ -106,7 +111,12 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
       return;
     }
 
-    initMap();
+    // Add a small delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      initMap();
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [rounds]);
 
   if (isLoading) {
@@ -133,7 +143,15 @@ const MapView: React.FC<MapViewProps> = ({ rounds, height = '400px', width = '10
 
   return (
     <Box>
-      <Box ref={mapRef} height={height} width={width} borderRadius="md" overflow="hidden" />
+      <Box 
+        ref={mapRef} 
+        height={height} 
+        width={width} 
+        borderRadius="md" 
+        overflow="hidden"
+        bg="gray.100"
+        minHeight={height}
+      />
       {roundsWithoutCoords > 0 && (
         <Text fontSize="sm" color="gray.500" mt={2}>
           {roundsWithoutCoords} round{roundsWithoutCoords !== 1 ? 's' : ''} not shown (missing location data)
