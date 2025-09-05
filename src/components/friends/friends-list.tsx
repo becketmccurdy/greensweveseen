@@ -26,7 +26,7 @@ interface Friend {
 interface FriendsListProps {
   user: {
     id: string
-    email: string | null
+    email?: string
   }
 }
 
