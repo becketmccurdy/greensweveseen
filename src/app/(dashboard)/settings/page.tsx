@@ -1,14 +1,32 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import React from 'react'
+import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { signOut } from '@/lib/firebase-auth'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
-export default async function SettingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export const dynamic = 'force-dynamic'
+
+export default function SettingsPage() {
+  const { user } = useAuth()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      toast.success('Signed out successfully')
+      router.push('/login')
+    } catch (error) {
+      toast.error('Failed to sign out')
+    }
+  }
 
   if (!user) {
-    redirect('/login')
+    router.push('/login')
+    return null
   }
 
   return (
@@ -57,11 +75,9 @@ export default async function SettingsPage() {
             <CardTitle>Account Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action="/auth/signout" method="post">
-              <Button type="submit" variant="outline">
-                Sign Out
-              </Button>
-            </form>
+            <Button onClick={handleSignOut} variant="outline">
+              Sign Out
+            </Button>
           </CardContent>
         </Card>
       </div>

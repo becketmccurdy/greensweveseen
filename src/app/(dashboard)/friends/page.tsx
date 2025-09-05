@@ -1,13 +1,19 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+'use client'
 
-export default async function FriendsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+import React from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useRouter } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
+
+export default function FriendsPage() {
+  const { user } = useAuth()
+  const router = useRouter()
 
   if (!user) {
-    redirect('/login')
+    router.push('/login')
+    return null
   }
 
   return (
