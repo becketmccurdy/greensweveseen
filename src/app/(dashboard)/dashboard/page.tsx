@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { getRounds } from '@/lib/firestore'
 import { KPICards } from '@/components/dashboard/kpi-cards'
 import { RecentRounds } from '@/components/dashboard/recent-rounds'
 import { EmptyDashboard } from '@/components/dashboard/empty-states'
@@ -20,6 +19,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [rounds, setRounds] = useState<any[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,10 +38,18 @@ export default function DashboardPage() {
     
     try {
       setDataLoading(true)
-      const userRounds = await getRounds(user.uid)
+      // Fetch rounds from our Next.js API which authenticates via Supabase cookies
+      const res = await fetch('/api/rounds', { cache: 'no-store' })
+      if (!res.ok) {
+        const msg = `Failed to load rounds (${res.status})`
+        throw new Error(msg)
+      }
+      const userRounds = await res.json()
       setRounds(userRounds)
+      setError(null)
     } catch (error) {
       console.error('Error loading rounds:', error)
+      setError(error instanceof Error ? error.message : 'Unknown error')
     } finally {
       setDataLoading(false)
     }
@@ -85,6 +93,12 @@ export default function DashboardPage() {
           Welcome back! Here's your golf performance overview.
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-destructive">
+          {error}
+        </div>
+      )}
 
       <KPICards {...kpiData} />
       <RecentRounds rounds={recentRounds} />

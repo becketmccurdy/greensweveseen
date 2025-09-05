@@ -83,6 +83,7 @@ export function Navigation({ user }: NavigationProps) {
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",

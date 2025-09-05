@@ -23,10 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-        const auth = getClientAuth()
+    const auth = getClientAuth()
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
+      if (!user) window.location.href = '/login'
     })
 
     return () => unsubscribe()
