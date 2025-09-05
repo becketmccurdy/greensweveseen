@@ -7,4 +7,4 @@ runConfig:
   # env variables will be automatically provided by Firebase App Hosting
   env:
     - variable: DATABASE_URL
-      fromSecret: DATABASE_URL
+      value: "postgresql://postgres:i76MSgHWTmr7vsWx@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres"
