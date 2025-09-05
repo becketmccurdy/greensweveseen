@@ -1,14 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { signInWithEmail, createAccount } from '@/lib/firebase-auth'
-import { createUserProfile } from '@/lib/firestore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { GoogleSignIn } from './google-sign-in'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -22,37 +21,30 @@ export function LoginForm() {
     setLoading(true)
 
     try {
-      const { user, error } = isSignUp 
-        ? await createAccount(email, password)
-        : await signInWithEmail(email, password)
+      const supabase = createClient()
 
-      if (error) {
-        toast.error(error)
-        return
-      }
-
-      if (user) {
-        if (isSignUp) {
-          // Create user profile for new users
-          try {
-            await createUserProfile({
-              uid: user.uid,
-              email: user.email!,
-              displayName: user.displayName,
-              firstName: user.email?.split('@')[0] || null,
-              lastName: null,
-              photoURL: user.photoURL
-            })
-          } catch (profileError) {
-            console.log('Error creating profile:', profileError)
-          }
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ email, password })
+        if (error) {
+          toast.error(error.message)
+          return
         }
-
-        toast.success(isSignUp ? 'Account created successfully!' : 'Signed in successfully!')
-        router.push('/dashboard')
+        toast.success('Account created! Check your email to confirm.')
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) {
+          toast.error(error.message)
+          return
+        }
+        if (data.user) {
+          toast.success('Signed in successfully!')
+        }
       }
+
+      router.push('/dashboard')
+      router.refresh()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(error.message || 'Authentication failed')
     } finally {
       setLoading(false)
     }

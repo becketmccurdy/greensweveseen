@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  // For Firebase auth, we handle session management on client-side
-  // Just allow requests to pass through for now
-  return NextResponse.next()
+  return updateSession(request)
 }
 
 export const config = {
@@ -15,8 +14,8 @@ export const config = {
      * - favicon.ico (favicon file)
      * - api/auth (auth routes)
      * - login (login page)
+     * - auth (OAuth callbacks)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/auth|login).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/auth|login|auth).*)',
   ],
 }
-

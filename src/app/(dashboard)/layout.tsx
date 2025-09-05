@@ -12,13 +12,19 @@ export default function DashboardLayout({
 }) {
   const { user } = useAuth()
 
+  const firstName = (user?.user_metadata?.name as string | undefined)?.split(' ')[0]
+    || user?.email?.split('@')[0]
+    || ''
+  const lastName = (user?.user_metadata?.name as string | undefined)?.split(' ')[1] || ''
+  const email = user?.email || ''
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50">
         <Navigation user={{
-          firstName: user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || '',
-          lastName: user?.displayName?.split(' ')[1] || '',
-          email: user?.email || ''
+          firstName,
+          lastName,
+          email
         }} />
         <main className="pb-16 md:pb-0 md:pl-64">
           {children}

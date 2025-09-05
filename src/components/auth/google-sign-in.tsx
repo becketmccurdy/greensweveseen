@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { signInWithGoogle } from '@/lib/firebase-auth'
-import { createUserProfile } from '@/lib/firestore'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 export function GoogleSignIn() {
   const [loading, setLoading] = useState(false)
@@ -14,33 +13,27 @@ export function GoogleSignIn() {
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
-      const { user, error } = await signInWithGoogle()
-      
-      if (error) {
-        toast.error('Sign in failed: ' + error)
-        return
-      }
-
-      if (user) {
-        // Create or update user profile in Firestore
-        try {
-          await createUserProfile({
-            uid: user.uid,
-            email: user.email!,
-            displayName: user.displayName,
-            firstName: user.displayName?.split(' ')[0] || null,
-            lastName: user.displayName?.split(' ')[1] || null,
-            photoURL: user.photoURL
-          })
-        } catch (profileError) {
-          console.log('Profile already exists or error creating profile:', profileError)
+      const supabase = createClient()
+      const redirectTo = `${window.location.origin}/dashboard`
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            // Force select account every time to avoid wrong account issues
+            prompt: 'select_account'
+          }
         }
-        
-        toast.success('Successfully signed in!')
+      })
+
+      if (error) {
+        toast.error('Google sign-in failed: ' + error.message)
+      } else {
+        // Supabase will redirect; as a fallback, route to dashboard
         router.push('/dashboard')
       }
     } catch (error: any) {
-      toast.error('Sign in failed: ' + error.message)
+      toast.error('Google sign-in failed: ' + (error.message || 'Unknown error'))
     } finally {
       setLoading(false)
     }
