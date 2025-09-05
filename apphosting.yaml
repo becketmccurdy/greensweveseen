@@ -3,7 +3,7 @@ runConfig:
   # Automatically detect Next.js and use optimal settings
   runtime: nodejs20
 
-  # Environment variables - hardcoded for now since secrets aren't visible in console
+  # Environment variables - Firebase config from console
   env:
     - variable: NEXT_PUBLIC_FIREBASE_API_KEY
       value: "AIzaSyCPckU-k0f5L_9pLNC-ehBHo9yWBJ37BtI"
@@ -17,3 +17,5 @@ runConfig:
       value: "303526391321"
     - variable: NEXT_PUBLIC_FIREBASE_APP_ID
       value: "1:303526391321:web:bc94adb339bf74b1ed8488"
+    - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+      value: "G-XD5F1DTWGN"
