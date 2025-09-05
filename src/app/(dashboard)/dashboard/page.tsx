@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { KPICards } from '@/components/dashboard/kpi-cards'
 import { RecentRounds } from '@/components/dashboard/recent-rounds'
 import { EmptyDashboard } from '@/components/dashboard/empty-states'
+import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton'
 
 interface KPIData {
   totalRounds: number
@@ -56,11 +57,7 @@ export default function DashboardPage() {
   }
 
   if (loading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   const recentRounds = rounds.slice(0, 5)
@@ -83,6 +80,10 @@ export default function DashboardPage() {
       averageScore,
       handicap: averageScore, // Simplified handicap for now
     }
+  }
+
+  if (dataLoading) {
+    return <DashboardSkeleton />
   }
 
   return (

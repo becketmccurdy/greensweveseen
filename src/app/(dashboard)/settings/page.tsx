@@ -1,18 +1,128 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { signOut } from '@/lib/firebase-auth'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
+
+interface UserProfile {
+  id: string
+  userId: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  bio: string | null
+  location: string | null
+  handicap: number | null
+  createdAt: string
+  updatedAt: string
+}
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    bio: '',
+    location: '',
+    handicap: ''
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/login')
+    } else {
+      loadProfile()
+    }
+  }, [user, router])
+
+  const loadProfile = async () => {
+    try {
+      const response = await fetch('/api/profile')
+      if (response.ok) {
+        const profileData = await response.json()
+        setProfile(profileData)
+        setFormData({
+          firstName: profileData.firstName || '',
+          lastName: profileData.lastName || '',
+          bio: profileData.bio || '',
+          location: profileData.location || '',
+          handicap: profileData.handicap?.toString() || ''
+        })
+      } else {
+        throw new Error('Failed to load profile')
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error)
+      toast.error('Failed to load profile')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    
+    if (formData.handicap && (isNaN(Number(formData.handicap)) || Number(formData.handicap) < 0 || Number(formData.handicap) > 54)) {
+      newErrors.handicap = 'Handicap must be a number between 0 and 54'
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+
+    setSaving(true)
+    setErrors({})
+
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName || null,
+          lastName: formData.lastName || null,
+          bio: formData.bio || null,
+          location: formData.location || null,
+          handicap: formData.handicap ? Number(formData.handicap) : null
+        })
+      })
+
+      if (response.ok) {
+        const updatedProfile = await response.json()
+        setProfile(updatedProfile)
+        toast.success('Profile updated successfully!')
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update profile')
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleSignOut = async () => {
     try {
@@ -24,13 +134,18 @@ export default function SettingsPage() {
     }
   }
 
-  React.useEffect(() => {
-    if (!user) {
-      router.push('/login')
-    }
-  }, [user, router])
-
   if (!user) return null
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-8 space-y-6">
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="ml-2">Loading settings...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -40,6 +155,104 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Profile Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, firstName: e.target.value }))
+                      if (errors.firstName) setErrors(prev => ({ ...prev, firstName: '' }))
+                    }}
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, lastName: e.target.value }))
+                      if (errors.lastName) setErrors(prev => ({ ...prev, lastName: '' }))
+                    }}
+                    placeholder="Enter your last name"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={formData.bio}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, bio: e.target.value }))
+                    if (errors.bio) setErrors(prev => ({ ...prev, bio: '' }))
+                  }}
+                  placeholder="Tell us about yourself..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, location: e.target.value }))
+                      if (errors.location) setErrors(prev => ({ ...prev, location: '' }))
+                    }}
+                    placeholder="City, State"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="handicap">Handicap</Label>
+                  <Input
+                    id="handicap"
+                    type="number"
+                    value={formData.handicap}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, handicap: e.target.value }))
+                      if (errors.handicap) setErrors(prev => ({ ...prev, handicap: '' }))
+                    }}
+                    placeholder="0-54"
+                    min="0"
+                    max="54"
+                    step="0.1"
+                    className={errors.handicap ? 'border-red-500' : ''}
+                  />
+                  {errors.handicap && (
+                    <p className="text-sm text-red-600">{errors.handicap}</p>
+                  )}
+                </div>
+              </div>
+
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Profile'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Account Information */}
         <Card>
           <CardHeader>
             <CardTitle>Account Information</CardTitle>
@@ -56,23 +269,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferences</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">
-              Preference settings will be added in a future update. You'll be able to customize:
-            </p>
-            <ul className="mt-4 space-y-2 text-gray-600">
-              <li>• Score display format</li>
-              <li>• Handicap calculation method</li>
-              <li>• Notification preferences</li>
-              <li>• Default course settings</li>
-            </ul>
-          </CardContent>
-        </Card>
-
+        {/* Account Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Account Actions</CardTitle>

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Course {
   id: string
@@ -32,25 +33,58 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
   const [newCourseName, setNewCourseName] = useState('')
   const [newCourseLocation, setNewCourseLocation] = useState('')
   const [newCoursePar, setNewCoursePar] = useState('72')
+  const [errors, setErrors] = useState<Record<string, string>>({})
   
   const router = useRouter()
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    
+    if (!selectedCourse) {
+      newErrors.course = 'Please select a course'
+    }
+    
+    if (!totalScore) {
+      newErrors.score = 'Please enter your total score'
+    } else {
+      const score = parseInt(totalScore)
+      if (isNaN(score) || score < 50 || score > 150) {
+        newErrors.score = 'Score must be between 50 and 150'
+      }
+    }
+    
+    if (!date) {
+      newErrors.date = 'Please select a date'
+    } else {
+      const selectedDate = new Date(date)
+      const today = new Date()
+      if (selectedDate > today) {
+        newErrors.date = 'Date cannot be in the future'
+      }
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedCourse || !totalScore) {
-      alert('Please select a course and enter your score')
+    
+    if (!validateForm()) {
       return
     }
 
     setLoading(true)
+    setErrors({})
+    
     try {
       const response = await fetch('/api/rounds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          courseId: selectedCourse.id,
+          courseId: selectedCourse!.id,
           totalScore: parseInt(totalScore),
-          totalPar: selectedCourse.par,
+          totalPar: selectedCourse!.par,
           date: new Date(date).toISOString(),
           weather: weather || null,
           notes: notes || null,
@@ -58,21 +92,27 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
       })
 
       if (response.ok) {
+        const round = await response.json()
+        toast.success(`Round saved successfully! Score: ${round.totalScore}`)
         router.push('/dashboard')
         router.refresh()
       } else {
-        throw new Error('Failed to save round')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save round')
       }
     } catch (error) {
       console.error('Error saving round:', error)
-      alert('Failed to save round. Please try again.')
+      toast.error(error instanceof Error ? error.message : 'Failed to save round. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const handleCreateCourse = async () => {
-    if (!newCourseName) return
+    if (!newCourseName) {
+      toast.error('Please enter a course name')
+      return
+    }
 
     setLoading(true)
     try {
@@ -93,12 +133,14 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
         setNewCourseName('')
         setNewCourseLocation('')
         setNewCoursePar('72')
+        toast.success(`Course "${newCourse.name}" created successfully!`)
       } else {
-        throw new Error('Failed to create course')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create course')
       }
     } catch (error) {
       console.error('Error creating course:', error)
-      alert('Failed to create course. Please try again.')
+      toast.error(error instanceof Error ? error.message : 'Failed to create course. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -121,9 +163,12 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                   onValueChange={(value) => {
                     const course = courses.find(c => c.id === value)
                     setSelectedCourse(course || null)
+                    if (errors.course) {
+                      setErrors(prev => ({ ...prev, course: '' }))
+                    }
                   }}
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger className={`flex-1 ${errors.course ? 'border-red-500' : ''}`}>
                     <SelectValue placeholder="Select a course" />
                   </SelectTrigger>
                   <SelectContent>
@@ -138,6 +183,7 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                   type="button"
                   variant="outline"
                   onClick={() => setShowNewCourse(true)}
+                  disabled={loading}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -197,6 +243,9 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                 </Button>
               </div>
             )}
+            {errors.course && (
+              <p className="text-sm text-red-600">{errors.course}</p>
+            )}
           </div>
 
           {/* Score and Date */}
@@ -207,12 +256,21 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                 id="score"
                 type="number"
                 value={totalScore}
-                onChange={(e) => setTotalScore(e.target.value)}
+                onChange={(e) => {
+                  setTotalScore(e.target.value)
+                  if (errors.score) {
+                    setErrors(prev => ({ ...prev, score: '' }))
+                  }
+                }}
                 placeholder="e.g. 85"
                 min="50"
                 max="150"
+                className={errors.score ? 'border-red-500' : ''}
                 required
               />
+              {errors.score && (
+                <p className="text-sm text-red-600">{errors.score}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
@@ -220,9 +278,18 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                 id="date"
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => {
+                  setDate(e.target.value)
+                  if (errors.date) {
+                    setErrors(prev => ({ ...prev, date: '' }))
+                  }
+                }}
+                className={errors.date ? 'border-red-500' : ''}
                 required
               />
+              {errors.date && (
+                <p className="text-sm text-red-600">{errors.date}</p>
+              )}
             </div>
           </div>
 
@@ -255,7 +322,14 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
             disabled={!selectedCourse || !totalScore || loading}
             className="w-full"
           >
-            {loading ? 'Saving...' : 'Save Round'}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Round'
+            )}
           </Button>
         </form>
       </CardContent>
