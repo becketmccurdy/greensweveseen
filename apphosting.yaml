@@ -8,3 +8,9 @@ runConfig:
   env:
     - variable: DATABASE_URL
       value: "postgresql://postgres:i76MSgHWTmr7vsWx@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres"
+    - variable: NEXT_PUBLIC_SUPABASE_URL
+      value: "https://aqagrxavkpskjdtpwnjy.supabase.co"
+    - variable: NEXT_PUBLIC_SUPABASE_ANON_KEY
+      value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYWdyeGF2a3Bza2pkdHB3bmp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NDU2ODQsImV4cCI6MjA3MjUyMTY4NH0.lq-zcC08FUQw3Op7vtjOSxWGEJDtyanbIfwycXZIBRw"
+    - variable: NEXT_PUBLIC_APP_URL
+      value: "https://greensweveseen.web.app"

@@ -28,11 +28,21 @@ export async function POST(request: Request) {
   const body = await request.json()
   
   try {
+    // Ensure a user profile exists for FK integrity
+    await prisma.userProfile.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        email: user.email || '',
+      }
+    })
+
     const course = await prisma.course.create({
       data: {
         name: body.name,
         location: body.location,
-        par: body.par,
+        par: typeof body.par === 'number' ? body.par : Number(body.par) || 72,
         createdById: user.id
       }
     })

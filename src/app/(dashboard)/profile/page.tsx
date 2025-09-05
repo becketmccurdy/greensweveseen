@@ -3,13 +3,23 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../contexts/auth-context'
-import { getUserProfile, getRounds } from '../../../lib/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { User, Mail, Trophy } from 'lucide-react'
-import type { UserProfile, Round } from '../../../lib/firestore'
+type UserProfile = {
+  id: string
+  userId: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  bio: string | null
+  location: string | null
+  handicap: number | null
+  createdAt: string
+  updatedAt: string
+}
 
 interface ProfileStats {
   totalRounds: number
@@ -48,14 +58,18 @@ export default function ProfilePage() {
     try {
       setDataLoading(true)
       
-      // Load profile
-      const profileData = await getUserProfile(user.uid)
+      // Load profile from API (creates if missing)
+      const profileRes = await fetch('/api/profile', { cache: 'no-store' })
+      if (!profileRes.ok) throw new Error('Failed to load profile')
+      const profileData: UserProfile = await profileRes.json()
       setProfile(profileData)
-      
-      // Load rounds for stats
-      const rounds = await getRounds(user.uid)
-      
-      if (rounds.length === 0) {
+
+      // Load stats from API
+      const statsRes = await fetch('/api/stats', { cache: 'no-store' })
+      if (!statsRes.ok) throw new Error('Failed to load stats')
+      const statsJson = await statsRes.json()
+
+      if (!statsJson || statsJson.totalRounds === 0) {
         setStats({
           totalRounds: 0,
           averageScore: 0,
@@ -63,11 +77,10 @@ export default function ProfilePage() {
           coursesPlayed: 0
         })
       } else {
-        const totalRounds = rounds.length
-        const scores = rounds.map(r => r.totalScore)
-        const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        const bestScore = Math.min(...scores)
-        const coursesPlayed = new Set(rounds.map(r => r.courseId)).size
+        const totalRounds = statsJson.totalRounds as number
+        const averageScore = statsJson.averageScore as number
+        const bestScore = statsJson.bestScore as number
+        const coursesPlayed = statsJson.coursesPlayed as number
         
         setStats({
           totalRounds,
@@ -123,7 +136,7 @@ export default function ProfilePage() {
                 <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
-                  value={profile?.displayName || user.displayName || ''}
+                  value={(user.user_metadata?.name as string | undefined) || `${profile?.firstName ?? ''} ${profile?.lastName ?? ''}`.trim()}
                   disabled
                   className="bg-gray-50"
                 />

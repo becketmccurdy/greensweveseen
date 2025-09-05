@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { signOut } from '@/lib/firebase-auth'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -126,7 +126,8 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      const supabase = createClient()
+      await supabase.auth.signOut()
       toast.success('Signed out successfully')
       router.push('/login')
     } catch (error) {
@@ -264,7 +265,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">User ID</label>
-              <p className="text-gray-500 text-sm font-mono">{user.uid}</p>
+              <p className="text-gray-500 text-sm font-mono">{user.id}</p>
             </div>
           </CardContent>
         </Card>
