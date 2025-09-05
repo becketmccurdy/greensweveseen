@@ -21,7 +21,7 @@ interface Activity {
 
 interface FriendActivityFeedProps {
   user: {
-    uid: string
+    id: string
     email: string | null
   }
 }
