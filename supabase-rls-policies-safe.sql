@@ -12,7 +12,8 @@ DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
 DROP POLICY IF EXISTS "Anyone can view courses" ON courses;
 DROP POLICY IF EXISTS "Authenticated users can create courses" ON courses;
-DROP POLICY IF EXISTS "Authenticated users can update courses" ON courses;
+DROP POLICY IF EXISTS "Users can update own courses" ON courses;
+DROP POLICY IF EXISTS "Users can delete own courses" ON courses;
 DROP POLICY IF EXISTS "Users can view own rounds" ON rounds;
 DROP POLICY IF EXISTS "Users can insert own rounds" ON rounds;
 DROP POLICY IF EXISTS "Users can update own rounds" ON rounds;
@@ -44,8 +45,11 @@ CREATE POLICY "Anyone can view courses" ON courses
 CREATE POLICY "Authenticated users can create courses" ON courses
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Authenticated users can update courses" ON courses
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Users can update own courses" ON courses
+  FOR UPDATE USING (auth.uid()::text = "createdById");
+
+CREATE POLICY "Users can delete own courses" ON courses
+  FOR DELETE USING (auth.uid()::text = "createdById");
 
 CREATE POLICY "Users can view own rounds" ON rounds
   FOR SELECT USING (auth.uid()::text = "userId");
@@ -72,13 +76,16 @@ CREATE POLICY "Users can delete own scores" ON scores
   FOR DELETE USING (auth.uid()::text = "userId");
 
 CREATE POLICY "Users can view own friendships" ON friendships
-  FOR SELECT USING (auth.uid()::text = "userId" OR auth.uid()::text = "friendId");
+  FOR SELECT USING (
+    (auth.uid()::text = "userId" OR auth.uid()::text = "friendId")
+    AND status = 'ACCEPTED'
+  );
 
 CREATE POLICY "Users can create friendships" ON friendships
   FOR INSERT WITH CHECK (auth.uid()::text = "userId");
 
 CREATE POLICY "Users can update own friendships" ON friendships
-  FOR UPDATE USING (auth.uid()::text = "userId" OR auth.uid()::text = "friendId");
+  FOR UPDATE USING (auth.uid()::text = "userId");
 
 CREATE POLICY "Users can delete own friendships" ON friendships
   FOR DELETE USING (auth.uid()::text = "userId");
@@ -88,8 +95,11 @@ CREATE POLICY "Users can view friend activities" ON friend_activities
     auth.uid()::text = "userId" OR 
     EXISTS (
       SELECT 1 FROM friendships 
-      WHERE (friendships."userId" = auth.uid()::text AND friendships."friendId" = friend_activities."userId")
-      OR (friendships."friendId" = auth.uid()::text AND friendships."userId" = friend_activities."userId")
+      WHERE (
+        (friendships."userId" = auth.uid()::text AND friendships."friendId" = friend_activities."userId")
+        OR
+        (friendships."friendId" = auth.uid()::text AND friendships."userId" = friend_activities."userId")
+      )
       AND friendships.status = 'ACCEPTED'
     )
   );

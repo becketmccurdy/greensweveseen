@@ -37,7 +37,10 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedCourse || !totalScore) return
+    if (!selectedCourse || !totalScore) {
+      alert('Please select a course and enter your score')
+      return
+    }
 
     setLoading(true)
     try {
