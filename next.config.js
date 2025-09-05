@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
-  images: {
-    unoptimized: true
-  },
+  // The output property is removed to enable server-based builds.
 }
 
 module.exports = nextConfig
