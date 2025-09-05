@@ -123,7 +123,7 @@ export default function ProfilePage() {
                 <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
-                  value={profile?.name || user.displayName || ''}
+                  value={profile?.displayName || user.displayName || ''}
                   disabled
                   className="bg-gray-50"
                 />
