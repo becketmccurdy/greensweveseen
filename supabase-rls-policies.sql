@@ -5,6 +5,7 @@ ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friend_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE friend_invites ENABLE ROW LEVEL SECURITY;
 
 -- User Profiles: Users can only see and modify their own profile
 CREATE POLICY "Users can view own profile" ON user_profiles
@@ -79,3 +80,13 @@ CREATE POLICY "Users can view friend activities" ON friend_activities
 
 CREATE POLICY "Users can insert own activities" ON friend_activities
   FOR INSERT WITH CHECK (auth.uid()::text = "userId");
+
+-- Friend Invites: Only inviter can view/insert their invites
+CREATE POLICY "Inviter can view own invites" ON friend_invites
+  FOR SELECT USING (auth.uid()::text = "inviterId");
+
+CREATE POLICY "Inviter can create invites" ON friend_invites
+  FOR INSERT WITH CHECK (auth.uid()::text = "inviterId");
+
+CREATE POLICY "Inviter can update own invites" ON friend_invites
+  FOR UPDATE USING (auth.uid()::text = "inviterId");

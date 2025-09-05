@@ -60,16 +60,31 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Allow public assets and auth routes without requiring a session
+  const path = request.nextUrl.pathname
+  const isPublicAsset = (
+    path === '/manifest.json' ||
+    path === '/sw.js' ||
+    path === '/robots.txt' ||
+    path.startsWith('/favicon') ||
+    path.startsWith('/icon-') ||
+    path.startsWith('/apple-touch-icon')
+  )
+
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/privacy') &&
-    !request.nextUrl.pathname.startsWith('/terms')
+    !path.startsWith('/login') &&
+    !path.startsWith('/auth') &&
+    !path.startsWith('/privacy') &&
+    !path.startsWith('/terms') &&
+    !isPublicAsset
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
+    // Preserve the intended destination so we can return after login
     url.pathname = '/login'
+    const intended = request.nextUrl.pathname + request.nextUrl.search
+    url.searchParams.set('next', intended)
     return NextResponse.redirect(url)
   }
 

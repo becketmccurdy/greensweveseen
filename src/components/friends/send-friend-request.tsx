@@ -49,7 +49,24 @@ export function SendFriendRequest({ onRequestSent }: SendFriendRequestProps) {
         onRequestSent()
       } else {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send friend request')
+        // If the user doesn't exist yet, offer to create an invite link
+        if (errorData.error && /not found/i.test(errorData.error)) {
+          const inviteRes = await fetch('/api/friends/invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          })
+          if (inviteRes.ok) {
+            const { url } = await inviteRes.json()
+            await navigator.clipboard.writeText(url)
+            toast.success('User not found. Invite link created and copied to clipboard!')
+          } else {
+            const ie = await inviteRes.json().catch(() => ({}))
+            throw new Error(ie.error || 'Failed to create invite link')
+          }
+        } else {
+          throw new Error(errorData.error || 'Failed to send friend request')
+        }
       }
     } catch (error) {
       console.error('Error sending friend request:', error)

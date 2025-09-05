@@ -2,19 +2,21 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 
 export function GoogleSignIn() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next') || '/dashboard'
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
       const supabase = createClient()
-      const redirectTo = `${window.location.origin}/dashboard`
+      const redirectTo = `${window.location.origin}${nextPath}`
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

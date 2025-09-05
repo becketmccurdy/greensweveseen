@@ -29,6 +29,7 @@ model UserProfile {
   friendships    Friendship[]     @relation("UserFriendships")
   friendOf       Friendship[]     @relation("FriendOf")
   activities     FriendActivity[]
+  invitesSent    FriendInvite[]   @relation("InvitesSent")
 
   @@map("user_profiles")
 }
@@ -135,4 +136,26 @@ enum ActivityType {
   EAGLE
   BIRDIE
   COURSE_RECORD
+}
+
+// New: Friend invites for sharing links via email/phone
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model FriendInvite {
+  id          String       @id @default(cuid())
+  inviterId   String
+  email       String?
+  phone       String?
+  token       String       @unique
+  status      InviteStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  acceptedAt  DateTime?
+
+  inviter UserProfile @relation("InvitesSent", fields: [inviterId], references: [userId], onDelete: Cascade)
+
+  @@map("friend_invites")
 }

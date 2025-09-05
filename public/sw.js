@@ -1,12 +1,11 @@
 // public/sw.js
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const APP_CACHE = `greensweveseen-${CACHE_VERSION}`
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
-  '/offline',
 ]
 
 self.addEventListener('install', (event) => {
@@ -17,7 +16,8 @@ self.addEventListener('install', (event) => {
 })
 
 self.addEventListener('activate', (event) => {
-  self.clientsClaim()
+  // Claim control of uncontrolled clients as soon as SW activates
+  self.clients.claim()
   event.waitUntil(
     caches.keys().then((names) =>
       Promise.all(
@@ -71,7 +71,8 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(async () => {
           const cached = await caches.match(request)
-          return cached || caches.match('/offline')
+          // Fall back to cached homepage if available
+          return cached || caches.match('/')
         })
     )
     return

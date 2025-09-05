@@ -7,15 +7,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - api/auth (auth routes)
-     * - login (login page)
-     * - auth (OAuth callbacks)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|api/auth|login|auth).*)',
+    // Allow Next internals, auth routes, login, and public PWA assets to bypass middleware
+    '/((?!_next/static|_next/image|favicon.ico|favicon.svg|icon-.*|apple-touch-icon.*|manifest.json|sw.js|robots.txt|screenshot-mobile.png|api/auth|login|auth).*)',
   ],
 }

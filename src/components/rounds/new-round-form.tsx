@@ -34,6 +34,18 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
   const [newCourseLocation, setNewCourseLocation] = useState('')
   const [newCoursePar, setNewCoursePar] = useState('72')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [useHoleByHole, setUseHoleByHole] = useState(false)
+  const [holes, setHoles] = useState(
+    Array.from({ length: 18 }, (_v, i) => ({
+      hole: i + 1,
+      strokes: '',
+      par: '4',
+      putts: '',
+      fairway: false,
+      gir: false,
+      notes: '',
+    }))
+  )
   
   const router = useRouter()
 
@@ -44,12 +56,20 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
       newErrors.course = 'Please select a course'
     }
     
-    if (!totalScore) {
-      newErrors.score = 'Please enter your total score'
+    if (!useHoleByHole) {
+      if (!totalScore) {
+        newErrors.score = 'Please enter your total score'
+      } else {
+        const score = parseInt(totalScore)
+        if (isNaN(score) || score < 50 || score > 150) {
+          newErrors.score = 'Score must be between 50 and 150'
+        }
+      }
     } else {
-      const score = parseInt(totalScore)
-      if (isNaN(score) || score < 50 || score > 150) {
-        newErrors.score = 'Score must be between 50 and 150'
+      // At least one hole must have strokes entered
+      const anyStrokes = holes.some((h) => h.strokes !== '')
+      if (!anyStrokes) {
+        newErrors.holes = 'Enter strokes for at least one hole or turn off hole-by-hole'
       }
     }
     
@@ -78,13 +98,32 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
     setErrors({})
     
     try {
+      // Compute totals
+      let computedTotalScore: number
+      let computedTotalPar: number
+      let useHoles = false
+      if (useHoleByHole) {
+        const filled = holes.filter((h) => h.strokes !== '')
+        if (filled.length > 0) {
+          computedTotalScore = filled.reduce((a, h) => a + (parseInt(h.strokes) || 0), 0)
+          computedTotalPar = filled.reduce((a, h) => a + (parseInt(h.par) || 4), 0)
+          useHoles = true
+        } else {
+          computedTotalScore = parseInt(totalScore)
+          computedTotalPar = selectedCourse ? selectedCourse.par : 72
+        }
+      } else {
+        computedTotalScore = parseInt(totalScore)
+        computedTotalPar = selectedCourse ? selectedCourse.par : 72
+      }
+
       const response = await fetch('/api/rounds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courseId: selectedCourse!.id,
-          totalScore: parseInt(totalScore),
-          totalPar: selectedCourse!.par,
+          totalScore: computedTotalScore,
+          totalPar: computedTotalPar,
           date: new Date(date).toISOString(),
           weather: weather || null,
           notes: notes || null,
@@ -93,6 +132,33 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
 
       if (response.ok) {
         const round = await response.json()
+
+        // If using hole-by-hole, save scores
+        if (useHoles) {
+          const scoresPayload = holes
+            .filter((h) => h.strokes !== '')
+            .map((h) => ({
+              hole: h.hole,
+              strokes: parseInt(h.strokes) || 0,
+              par: parseInt(h.par) || 4,
+              putts: h.putts ? parseInt(h.putts) : null,
+              fairway: h.fairway || null,
+              gir: h.gir || null,
+              notes: h.notes || null,
+            }))
+          if (scoresPayload.length > 0) {
+            const sr = await fetch('/api/scores', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ roundId: round.id, scores: scoresPayload })
+            })
+            if (!sr.ok) {
+              const se = await sr.json().catch(() => ({}))
+              console.error('Failed to save hole scores:', se)
+            }
+          }
+        }
+
         toast.success(`Round saved successfully! Score: ${round.totalScore}`)
         router.push('/dashboard')
         router.refresh()
@@ -188,6 +254,7 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+
             ) : (
               <div className="space-y-3 p-4 border border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between">
@@ -266,7 +333,7 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                 min="50"
                 max="150"
                 className={errors.score ? 'border-red-500' : ''}
-                required
+                required={!useHoleByHole}
               />
               {errors.score && (
                 <p className="text-sm text-red-600">{errors.score}</p>
@@ -319,7 +386,7 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
           {/* Submit */}
           <Button
             type="submit"
-            disabled={!selectedCourse || !totalScore || loading}
+            disabled={!selectedCourse || (!useHoleByHole && !totalScore) || loading}
             className="w-full"
           >
             {loading ? (

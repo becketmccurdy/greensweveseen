@@ -4,10 +4,20 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
+    // Fetch the current user if available so we can return ownership info
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
     const courses = await prisma.course.findMany({
       orderBy: { name: 'asc' }
     })
-    return NextResponse.json(courses)
+
+    const shaped = courses.map((c) => ({
+      ...c,
+      owned: user ? c.createdById === user.id : false,
+    }))
+
+    return NextResponse.json(shaped)
   } catch (error) {
     console.error('Error fetching courses:', error)
     return NextResponse.json(

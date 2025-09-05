@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { GoogleSignIn } from './google-sign-in'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 
@@ -15,6 +15,8 @@ export function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next') || '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +29,7 @@ export function LoginForm() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/dashboard` }
+          options: { emailRedirectTo: `${window.location.origin}${nextPath}` }
         })
         if (error) {
           toast.error(error.message)
@@ -45,7 +47,7 @@ export function LoginForm() {
         }
       }
 
-      router.push('/dashboard')
+      router.push(nextPath)
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed')

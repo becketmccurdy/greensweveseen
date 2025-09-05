@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { FriendsList } from '@/components/friends/friends-list'
 import { SendFriendRequest } from '@/components/friends/send-friend-request'
+import { InviteFriend } from '@/components/friends/invite-friend'
 import { FriendActivityFeed } from '@/components/friends/friend-activity-feed'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +36,7 @@ export default function FriendsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
+          <InviteFriend />
           <SendFriendRequest onRequestSent={handleRequestSent} />
           <FriendsList key={refreshKey} user={user} />
         </div>
