@@ -1,65 +1,22 @@
 'use client'
 
-import React, { useEffect, useState, Suspense } from 'react'
+import React, { useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../contexts/auth-context'
-import { getCourses } from '../../../lib/firestore'
 import { CoursesList } from '@/components/courses/courses-list'
-import { EmptyCourses } from '../../../components/dashboard/empty-states'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Button } from '@/components/ui/button'
-import type { FallbackProps } from 'react-error-boundary'
-
-interface Course {
-  id: string
-  name: string
-  location: string | null
-  par: number
-}
 
 export default function CoursesPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [dataLoading, setDataLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login')
     }
   }, [user, loading, router])
-
-  useEffect(() => {
-    if (user) {
-      loadCourses()
-    }
-  }, [user])
-
-  const loadCourses = async () => {
-    if (!user) return
-    
-    try {
-      setDataLoading(true)
-      const coursesData = await getCourses(user.uid)
-      
-      // Transform to Course format
-      const courseList: Course[] = coursesData.map(course => ({
-        id: course.id || '',
-        name: course.name,
-        location: course.location,
-        par: course.par,
-      }))
-      
-      setCourses(courseList)
-    } catch (error) {
-      setError(error)
-      console.error('Error loading courses:', error)
-    } finally {
-      setDataLoading(false)
-    }
-  }
 
   if (loading || !user) {
     return (
@@ -102,19 +59,7 @@ export default function CoursesPage() {
         }}
       >
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          {dataLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-lg">Loading your courses...</div>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-lg">Error loading courses: {error.message}</div>
-            </div>
-          ) : courses.length === 0 ? (
-            <EmptyCourses />
-          ) : (
-            <CoursesList courses={courses} />
-          )}
+          <CoursesList />
         </Suspense>
       </ErrorBoundary>
     </div>
