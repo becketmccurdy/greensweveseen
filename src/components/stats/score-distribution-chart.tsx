@@ -53,7 +53,7 @@ export function ScoreDistributionChart({ data }: ScoreDistributionChartProps) {
                   `${value} rounds (${data.find(d => d.range === name)?.percentage || 0}%)`,
                   'Rounds'
                 ]}
-                labelFormatter={(value) => `Score Range: ${value}`}
+                labelFormatter={(value: string) => `Score Range: ${value}`}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {data.map((entry, index) => (

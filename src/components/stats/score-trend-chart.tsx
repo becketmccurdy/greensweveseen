@@ -66,7 +66,7 @@ export function ScoreTrendChart({ data, period }: ScoreTrendChartProps) {
                   const date = new Date(value)
                   return date.toLocaleDateString()
                 }}
-                content={({ active, payload, label }) => {
+                content={({ active, payload, label }: any) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload
                     return (

@@ -63,7 +63,7 @@ export function MonthlyStatsChart({ data }: MonthlyStatsChartProps) {
                   value,
                   name === 'rounds' ? 'Rounds Played' : 'Average Score'
                 ]}
-                labelFormatter={(value) => `Month: ${value}`}
+                labelFormatter={(value: string) => `Month: ${value}`}
               />
               <Bar 
                 yAxisId="left"
