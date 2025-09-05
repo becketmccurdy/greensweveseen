@@ -11,10 +11,13 @@ export default function FriendsPage() {
   const { user } = useAuth()
   const router = useRouter()
 
-  if (!user) {
-    router.push('/login')
-    return null
-  }
+  React.useEffect(() => {
+    if (!user) {
+      router.push('/login')
+    }
+  }, [user, router])
+
+  if (!user) return null
 
   return (
     <div className="p-4 md:p-8 space-y-6">

@@ -5,3 +5,6 @@ runConfig:
   
   # Try removing explicit env vars to let Firebase auto-configure
   # env variables will be automatically provided by Firebase App Hosting
+  env:
+    - variable: DATABASE_URL
+      fromSecret: DATABASE_URL

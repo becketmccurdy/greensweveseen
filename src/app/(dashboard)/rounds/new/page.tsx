@@ -7,6 +7,10 @@ async function getCourses() {
   })
 }
 
+// Ensure this page is rendered dynamically at request time to avoid static export
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function NewRoundPage() {
   const courses = await getCourses()
 

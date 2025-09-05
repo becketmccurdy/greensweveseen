@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   title: 'GreensWeveSeen - Golf Score Tracker',
   description: 'Track your golf scores and improve your game',
   manifest: '/manifest.json',
-  themeColor: '#22c55e',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
