@@ -48,7 +48,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">User ID</label>
-              <p className="text-gray-500 text-sm font-mono">{user.id}</p>
+              <p className="text-gray-500 text-sm font-mono">{user.uid}</p>
             </div>
           </CardContent>
         </Card>

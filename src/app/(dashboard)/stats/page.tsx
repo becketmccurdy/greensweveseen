@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getRoundsForUser } from '@/lib/firestore'
+import { getRounds } from '@/lib/firestore'
 import { useRouter } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -34,7 +34,7 @@ export default function StatsPage() {
 
     const loadStats = async () => {
       try {
-        const rounds = await getRoundsForUser(user.uid)
+        const rounds = await getRounds(user.uid)
         
         if (rounds.length === 0) {
           setStats({
