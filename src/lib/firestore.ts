@@ -14,7 +14,7 @@ import {
   Timestamp,
   serverTimestamp
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { getClientFirestore } from './firebase'
 
 export interface Course {
   id?: string
@@ -52,6 +52,7 @@ export interface UserProfile {
 
 // User Profile functions
 export const createUserProfile = async (profile: Omit<UserProfile, 'createdAt'>) => {
+  const db = getClientFirestore();
   const userRef = doc(db, 'users', profile.uid)
   await setDoc(userRef, {
     ...profile,
@@ -60,6 +61,7 @@ export const createUserProfile = async (profile: Omit<UserProfile, 'createdAt'>)
 }
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  const db = getClientFirestore();
   const userRef = doc(db, 'users', uid)
   const userSnap = await getDoc(userRef)
   
@@ -75,6 +77,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
 // Course functions
 export const createCourse = async (course: Omit<Course, 'id' | 'createdAt'>) => {
+  const db = getClientFirestore();
   const docRef = await addDoc(collection(db, 'courses'), {
     ...course,
     createdAt: serverTimestamp()
@@ -83,6 +86,7 @@ export const createCourse = async (course: Omit<Course, 'id' | 'createdAt'>) => 
 }
 
 export const getCourses = async (userId: string): Promise<Course[]> => {
+  const db = getClientFirestore();
   const q = query(
     collection(db, 'courses'),
     where('userId', '==', userId),
@@ -99,6 +103,7 @@ export const getCourses = async (userId: string): Promise<Course[]> => {
 
 // Round functions
 export const createRound = async (round: Omit<Round, 'id' | 'createdAt'>) => {
+  const db = getClientFirestore();
   const docRef = await addDoc(collection(db, 'rounds'), {
     ...round,
     createdAt: serverTimestamp()
@@ -107,6 +112,7 @@ export const createRound = async (round: Omit<Round, 'id' | 'createdAt'>) => {
 }
 
 export const getRounds = async (userId: string): Promise<Round[]> => {
+  const db = getClientFirestore();
   const q = query(
     collection(db, 'rounds'),
     where('userId', '==', userId),
@@ -123,6 +129,7 @@ export const getRounds = async (userId: string): Promise<Round[]> => {
 }
 
 export const getRound = async (roundId: string): Promise<Round | null> => {
+  const db = getClientFirestore();
   const roundRef = doc(db, 'rounds', roundId)
   const roundSnap = await getDoc(roundRef)
   
@@ -139,11 +146,13 @@ export const getRound = async (roundId: string): Promise<Round | null> => {
 }
 
 export const updateRound = async (roundId: string, updates: Partial<Round>) => {
+  const db = getClientFirestore();
   const roundRef = doc(db, 'rounds', roundId)
   await updateDoc(roundRef, updates)
 }
 
 export const deleteRound = async (roundId: string) => {
+  const db = getClientFirestore();
   const roundRef = doc(db, 'rounds', roundId)
   await deleteDoc(roundRef)
 }

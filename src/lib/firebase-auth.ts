@@ -6,7 +6,7 @@ import {
   signOut as firebaseSignOut,
   User
 } from 'firebase/auth'
-import { auth } from './firebase'
+import { getClientAuth } from './firebase'
 
 const googleProvider = new GoogleAuthProvider()
 
@@ -16,6 +16,7 @@ export interface AuthResult {
 }
 
 export const signInWithGoogle = async (): Promise<AuthResult> => {
+  const auth = getClientAuth()
   try {
     const result = await signInWithPopup(auth, googleProvider)
     return { user: result.user, error: null }
@@ -25,6 +26,7 @@ export const signInWithGoogle = async (): Promise<AuthResult> => {
 }
 
 export const signInWithEmail = async (email: string, password: string): Promise<AuthResult> => {
+  const auth = getClientAuth()
   try {
     const result = await signInWithEmailAndPassword(auth, email, password)
     return { user: result.user, error: null }
@@ -34,6 +36,7 @@ export const signInWithEmail = async (email: string, password: string): Promise<
 }
 
 export const createAccount = async (email: string, password: string): Promise<AuthResult> => {
+  const auth = getClientAuth()
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password)
     return { user: result.user, error: null }
@@ -43,6 +46,7 @@ export const createAccount = async (email: string, password: string): Promise<Au
 }
 
 export const signOut = async (): Promise<{ error: string | null }> => {
+  const auth = getClientAuth()
   try {
     await firebaseSignOut(auth)
     return { error: null }
