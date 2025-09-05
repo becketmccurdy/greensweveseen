@@ -1,5 +1,5 @@
 // public/sw.js
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v4'
 const APP_CACHE = `greensweveseen-${CACHE_VERSION}`
 const CORE_ASSETS = [
   '/',

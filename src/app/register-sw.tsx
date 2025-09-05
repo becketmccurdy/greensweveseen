@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 export function RegisterSW() {
   useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return
     if (!('serviceWorker' in navigator)) return
 
     const onUpdate = (registration: ServiceWorkerRegistration) => {
