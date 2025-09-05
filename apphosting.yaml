@@ -2,20 +2,6 @@
 runConfig:
   # Automatically detect Next.js and use optimal settings
   runtime: nodejs20
-
-  # Environment variables - Firebase config from console
-  env:
-    - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-      value: "AIzaSyCPckU-k0f5L_9pLNC-ehBHo9yWBJ37BtI"
-    - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-      value: "greensweveseen.firebaseapp.com"
-    - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-      value: "greensweveseen"
-    - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-      value: "greensweveseen.firebasestorage.app"
-    - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-      value: "303526391321"
-    - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-      value: "1:303526391321:web:bc94adb339bf74b1ed8488"
-    - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-      value: "G-XD5F1DTWGN"
+  
+  # Try removing explicit env vars to let Firebase auto-configure
+  # env variables will be automatically provided by Firebase App Hosting
