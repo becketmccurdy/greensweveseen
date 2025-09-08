@@ -1,22 +1,23 @@
-'use client'
-
 import React from 'react'
-import { useAuth } from '@/contexts/auth-context'
 import { Navigation } from '@/components/navigation'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { getCurrentUser } from '@/lib/auth'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuth()
+  const currentUser = await getCurrentUser()
+  
+  if (!currentUser) {
+    // This should be handled by middleware, but as a fallback
+    return null
+  }
 
-  const firstName = (user?.user_metadata?.name as string | undefined)?.split(' ')[0]
-    || user?.email?.split('@')[0]
-    || ''
-  const lastName = (user?.user_metadata?.name as string | undefined)?.split(' ')[1] || ''
-  const email = user?.email || ''
+  const firstName = currentUser.profile.firstName || currentUser.email?.split('@')[0] || ''
+  const lastName = currentUser.profile.lastName || ''
+  const email = currentUser.email || ''
 
   return (
     <ErrorBoundary>

@@ -42,7 +42,7 @@ export async function GET() {
     })
 
     // Transform the data to show friend information
-    const friends = friendships.map(friendship => {
+    const friends = friendships.map((friendship: any) => {
       const isUser = friendship.userId === user.id
       const friend = isUser ? friendship.friend : friendship.user
       const isPending = friendship.status === 'PENDING'

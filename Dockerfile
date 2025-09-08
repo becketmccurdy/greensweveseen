@@ -3,13 +3,18 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install deps
+# Install deps and tools needed for Prisma
+RUN apk add --no-cache openssl libc6-compat
 COPY package.json package-lock.json ./
+# Prisma's postinstall (prisma generate) needs the schema present during npm ci
+COPY prisma ./prisma
 RUN npm ci
 
 # Copy source and build
 COPY . .
+
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 RUN npm run build
 
 # Runtime stage
@@ -18,15 +23,23 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy only what we need to run the server
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./next.config.js
+# Install runtime dependencies
+RUN apk add --no-cache openssl libc6-compat && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Default port
+# Copy built application
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
 EXPOSE 8080
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
 
-# Start Next.js on the port provided by the platform (Cloud Run sets $PORT)
-CMD ["sh", "-c", "npx next start -p ${PORT:-3000}"]
+# Start the application
+CMD ["sh", "-c", "npx prisma generate && node server.js"]

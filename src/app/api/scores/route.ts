@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
 
     // Recalculate round totals
     const saved = await prisma.score.findMany({ where: { roundId } })
-    const totalScore = saved.reduce((a, b) => a + b.strokes, 0)
-    const totalPar = saved.reduce((a, b) => a + b.par, 0)
+    const totalScore = saved.reduce((a: number, b: any) => a + b.strokes, 0)
+    const totalPar = saved.reduce((a: number, b: any) => a + b.par, 0)
     await prisma.round.update({ where: { id: roundId }, data: { totalScore, totalPar } })
 
     return NextResponse.json({ success: true, totalScore, totalPar })

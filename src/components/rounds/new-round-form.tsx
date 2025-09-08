@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useRoundsStore } from '@/lib/stores/rounds-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -97,26 +98,44 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
     setLoading(true)
     setErrors({})
     
-    try {
-      // Compute totals
-      let computedTotalScore: number
-      let computedTotalPar: number
-      let useHoles = false
-      if (useHoleByHole) {
-        const filled = holes.filter((h) => h.strokes !== '')
-        if (filled.length > 0) {
-          computedTotalScore = filled.reduce((a, h) => a + (parseInt(h.strokes) || 0), 0)
-          computedTotalPar = filled.reduce((a, h) => a + (parseInt(h.par) || 4), 0)
-          useHoles = true
-        } else {
-          computedTotalScore = parseInt(totalScore)
-          computedTotalPar = selectedCourse ? selectedCourse.par : 72
-        }
+    // Compute totals
+    let computedTotalScore: number
+    let computedTotalPar: number
+    let useHoles = false
+    if (useHoleByHole) {
+      const filled = holes.filter((h) => h.strokes !== '')
+      if (filled.length > 0) {
+        computedTotalScore = filled.reduce((a, h) => a + (parseInt(h.strokes) || 0), 0)
+        computedTotalPar = filled.reduce((a, h) => a + (parseInt(h.par) || 4), 0)
+        useHoles = true
       } else {
         computedTotalScore = parseInt(totalScore)
         computedTotalPar = selectedCourse ? selectedCourse.par : 72
       }
+    } else {
+      computedTotalScore = parseInt(totalScore)
+      computedTotalPar = selectedCourse ? selectedCourse.par : 72
+    }
 
+    // Generate temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}`
+    
+    // Add optimistic round to store
+    const { addRoundOptimistic, confirmRound, removeOptimisticRound } = useRoundsStore.getState()
+    addRoundOptimistic({
+      tempId,
+      date: new Date(date),
+      totalScore: computedTotalScore,
+      totalPar: computedTotalPar,
+      course: {
+        name: selectedCourse!.name,
+        location: selectedCourse!.location,
+      },
+      weather,
+      notes,
+    })
+
+    try {
       const response = await fetch('/api/rounds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,6 +151,16 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
 
       if (response.ok) {
         const round = await response.json()
+
+        // Confirm the optimistic update with real data
+        confirmRound(tempId, {
+          ...round,
+          date: new Date(round.date),
+          course: {
+            name: selectedCourse!.name,
+            location: selectedCourse!.location,
+          }
+        })
 
         // If using hole-by-hole, save scores
         if (useHoles) {
@@ -161,12 +190,15 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
 
         toast.success(`Round saved successfully! Score: ${round.totalScore}`)
         router.push('/dashboard')
-        router.refresh()
       } else {
+        // Remove optimistic update on failure
+        removeOptimisticRound(tempId)
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to save round')
       }
     } catch (error) {
+      // Remove optimistic update on error
+      removeOptimisticRound(tempId)
       console.error('Error saving round:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to save round. Please try again.')
     } finally {

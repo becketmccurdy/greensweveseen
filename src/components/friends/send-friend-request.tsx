@@ -9,7 +9,7 @@ import { UserPlus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface SendFriendRequestProps {
-  onRequestSent: () => void
+  onRequestSent?: () => void
 }
 
 export function SendFriendRequest({ onRequestSent }: SendFriendRequestProps) {
@@ -46,7 +46,7 @@ export function SendFriendRequest({ onRequestSent }: SendFriendRequestProps) {
       if (response.ok) {
         toast.success('Friend request sent successfully!')
         setEmail('')
-        onRequestSent()
+        onRequestSent?.()
       } else {
         const errorData = await response.json()
         // If the user doesn't exist yet, offer to create an invite link

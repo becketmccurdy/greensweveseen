@@ -95,7 +95,7 @@ export default async function RoundDetailsPage(props: any) {
             <div className="space-y-2">
               <div className="text-sm font-medium text-gray-700">Hole-by-Hole</div>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-                {round.scores.sort((a, b) => a.hole - b.hole).map((s) => (
+                {round.scores.sort((a: any, b: any) => a.hole - b.hole).map((s: any) => (
                   <div key={s.id} className="rounded-md border p-2 text-sm flex items-center justify-between">
                     <span>H{s.hole}</span>
                     <span className="font-medium">{s.strokes}</span>

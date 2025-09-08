@@ -12,8 +12,8 @@ datasource db {
 
 model UserProfile {
   id        String   @id @default(cuid())
-  userId    String   @unique // Supabase auth user ID
-  email     String   @unique
+  userId    String   // Supabase auth user ID
+  email     String
   firstName String?
   lastName  String?
   bio       String?

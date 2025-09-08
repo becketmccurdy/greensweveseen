@@ -1,12 +1,6 @@
-'use client'
-
-import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
-import { KPICards } from '@/components/dashboard/kpi-cards'
-import { RecentRounds } from '@/components/dashboard/recent-rounds'
-import { EmptyDashboard } from '@/components/dashboard/empty-states'
-import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton'
+import { DashboardClient } from '@/components/dashboard/dashboard-client'
+import { getUserProfile } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 interface KPIData {
   totalRounds: number
@@ -15,52 +9,16 @@ interface KPIData {
   handicap: number | null
 }
 
-export default function DashboardPage() {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-  const [rounds, setRounds] = useState<any[]>([])
-  const [dataLoading, setDataLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
-  }, [user, loading, router])
-
-  useEffect(() => {
-    if (user) {
-      loadRounds()
-    }
-  }, [user])
-
-  const loadRounds = async () => {
-    if (!user) return
-    
-    try {
-      setDataLoading(true)
-      // Fetch rounds from our Next.js API which authenticates via Supabase cookies
-      const res = await fetch('/api/rounds', { cache: 'no-store' })
-      if (!res.ok) {
-        const msg = `Failed to load rounds (${res.status})`
-        throw new Error(msg)
+async function getDashboardData(userId: string) {
+  const rounds = await prisma.round.findMany({
+    where: { userId },
+    include: {
+      course: {
+        select: { name: true, location: true }
       }
-      const userRounds = await res.json()
-      setRounds(userRounds)
-      setError(null)
-    } catch (error) {
-      console.error('Error loading rounds:', error)
-      setError(error instanceof Error ? error.message : 'Unknown error')
-    } finally {
-      setDataLoading(false)
-    }
-  }
-
-  if (loading || !user) {
-    return <DashboardSkeleton />
-  }
-
-  const recentRounds = rounds.slice(0, 5)
+    },
+    orderBy: { date: 'desc' }
+  })
 
   let kpiData: KPIData = {
     totalRounds: 0,
@@ -70,9 +28,9 @@ export default function DashboardPage() {
   }
 
   if (rounds.length > 0) {
-    const scores = rounds.map(r => r.totalScore)
+    const scores = rounds.map((r: any) => r.totalScore)
     const bestScore = Math.min(...scores)
-    const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    const averageScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
 
     kpiData = {
       totalRounds: rounds.length,
@@ -82,12 +40,15 @@ export default function DashboardPage() {
     }
   }
 
-  if (dataLoading) {
-    return <DashboardSkeleton />
-  }
+  return { kpiData, rounds }
+}
+
+export default async function DashboardPage() {
+  const profile = await getUserProfile()
+  const { kpiData, rounds } = await getDashboardData(profile.userId)
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
@@ -95,14 +56,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-destructive">
-          {error}
-        </div>
-      )}
-
-      <KPICards {...kpiData} />
-      <RecentRounds rounds={recentRounds} />
+      <DashboardClient initialRounds={rounds} initialKPIData={kpiData} />
     </div>
   )
 }

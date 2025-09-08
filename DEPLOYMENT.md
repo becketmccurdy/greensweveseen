@@ -16,46 +16,35 @@ The code has been pushed to: https://github.com/becketmccurdy/greensweveseen1
 3. Import your GitHub repository `greensweveseen`
 4. Configure environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`: https://aqagrxavkpskjdtpwnjy.supabase.co
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYWdyeGF2a3Bza2pkdHB3bmp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NDU2ODQsImV4cCI6MjA3MjUyMTY4NH0.lq-zcC08FUQw3Op7vtjOSxWGEJDtyanbIfwycXZIBRw
-   - `DATABASE_URL`: postgresql://postgres:i76MSgHWTmr7vsWx@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres
-   - `NEXT_PUBLIC_APP_URL`: https://greensweveseen.com
-5. Click "Deploy"
 
-## 4. Configure Custom Domain
-1. In Vercel dashboard, go to your project
-2. Go to Settings → Domains
-3. Add domain: `greensweveseen.com`
-4. Add domain: `www.greensweveseen.com` (redirect to main)
-5. Follow Vercel's DNS instructions
+## 📋 Environment Setup
 
-## 5. Update DNS Records
-In your domain registrar (where you bought greensweveseen.com):
+Your `.env.production` file should contain:
 
-### A Records:
-- Name: `@` (root domain)
-- Value: `76.76.19.61` (Vercel's IP)
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+DATABASE_URL=postgresql://postgres:[password]@db.your-project.supabase.co:5432/postgres
 
-### CNAME Records:
-- Name: `www`
-- Value: `cname.vercel-dns.com`
-
-## 6. Update Supabase Auth Settings
-1. Go to Supabase Dashboard → Authentication → URL Configuration
-2. Add these URLs:
-   - Site URL: `https://greensweveseen.com`
-   - Redirect URLs: 
-     - `https://greensweveseen.com/auth/callback`
-     - `https://www.greensweveseen.com/auth/callback`
-
-## 7. Test Deployment
-1. Wait for DNS propagation (5-30 minutes)
-2. Visit https://greensweveseen.com
-3. Test user registration and login
-4. Test creating a golf round
-5. Verify PWA installation works
-
-## Environment Variables Summary
+# Production URL (will be updated after first deployment)
+NEXT_PUBLIC_APP_URL=https://your-app-url.run.app
 ```
+
+## 🚀 Quick Deployment
+
+### Option 1: Automated Deployment Script
+
+```bash
+# Set your Google Cloud project
+export GOOGLE_CLOUD_PROJECT="your-project-id"
+export GOOGLE_CLOUD_REGION="us-central1"
+
+# Run the deployment script
+./deploy.sh
+
+# Set up environment variables
+./setup-env.sh
 NEXT_PUBLIC_SUPABASE_URL=https://aqagrxavkpskjdtpwnjy.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYWdyeGF2a3Bza2pkdHB3bmp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NDU2ODQsImV4cCI6MjA3MjUyMTY4NH0.lq-zcC08FUQw3Op7vtjOSxWGEJDtyanbIfwycXZIBRw
 DATABASE_URL=postgresql://postgres:i76MSgHWTmr7vsWx@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres

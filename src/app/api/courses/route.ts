@@ -12,7 +12,7 @@ export async function GET() {
       orderBy: { name: 'asc' }
     })
 
-    const shaped = courses.map((c) => ({
+    const shaped = courses.map((c: any) => ({
       ...c,
       owned: user ? c.createdById === user.id : false,
     }))

@@ -20,7 +20,7 @@ interface Activity {
 }
 
 interface FriendActivityFeedProps {
-  user: {
+  user?: {
     id: string
     email?: string
   }

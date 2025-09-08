@@ -24,8 +24,9 @@ export async function GET() {
     return NextResponse.json(rounds)
   } catch (error) {
     console.error('Error fetching rounds:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
     return NextResponse.json(
-      { error: 'Failed to fetch rounds' },
+      { error: 'Failed to fetch rounds', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
