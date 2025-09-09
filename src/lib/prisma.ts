@@ -21,4 +21,13 @@ export function getPrisma(): PrismaClient {
 
 export type Prisma = PrismaClient
 
-export const prisma = getPrisma()
+// Lazy initialization to avoid build-time errors
+let _prisma: PrismaClient | null = null
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    if (!_prisma) {
+      _prisma = getPrisma()
+    }
+    return (_prisma as any)[prop]
+  }
+})
