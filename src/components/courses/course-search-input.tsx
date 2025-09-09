@@ -13,6 +13,11 @@ interface Course {
   location: string | null
   par: number
   timesPlayed?: number
+  source?: 'local' | 'external'
+  externalId?: number
+  latitude?: number
+  longitude?: number
+  address?: string
 }
 
 interface CourseSearchInputProps {
@@ -110,6 +115,33 @@ export function CourseSearchInput({
     }
   }
 
+  const handleSelectExternalCourse = async (course: Course) => {
+    // If it's an external course, import it to our database first
+    if (course.id.toString().startsWith('external-')) {
+      try {
+        const response = await fetch('/api/courses/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            externalId: course.externalId,
+            source: 'golfcourseapi'
+          })
+        })
+
+        if (response.ok) {
+          const importedCourse = await response.json()
+          handleCourseSelect(importedCourse)
+        } else {
+          toast.error('Failed to import course')
+        }
+      } catch (error) {
+        toast.error('Failed to import course')
+      }
+    } else {
+      handleCourseSelect(course)
+    }
+  }
+
   return (
     <div className="relative">
       <Input
@@ -132,7 +164,7 @@ export function CourseSearchInput({
                 {results.map((course) => (
                   <button
                     key={course.id}
-                    onClick={() => handleCourseSelect(course)}
+                    onClick={() => handleSelectExternalCourse(course)}
                     className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center justify-between">

@@ -38,25 +38,29 @@ model UserProfile {
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  name        String
-  location    String?
-  par         Int      @default(72)
-  holes       Int      @default(18)
-  rating      Float?
-  slope       Int?
-  description String?
-  latitude    Float?
-  longitude   Float?
-  createdById String   // User who created this course
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  location       String?
+  par            Int      @default(72)
+  holes          Int      @default(18)
+  rating         Float?
+  slope          Int?
+  description    String?
+  latitude       Float?
+  longitude      Float?
+  address        String?
+  externalId     String?  // ID from external API (e.g., GolfCourseAPI)
+  externalSource String?  // Source of external data (e.g., "golfcourseapi")
+  createdById    String   // User who created this course
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   createdBy UserProfile @relation("CreatedCourses", fields: [createdById], references: [userId], onDelete: Cascade)
   rounds    Round[]
 
   @@index([createdById])
+  @@index([externalId, externalSource])
   @@map("courses")
 }
 
