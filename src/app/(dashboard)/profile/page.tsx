@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../contexts/auth-context'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
@@ -46,13 +46,7 @@ export default function ProfilePage() {
     }
   }, [user, loading, router])
 
-  useEffect(() => {
-    if (user) {
-      loadProfileData()
-    }
-  }, [user])
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     if (!user) return
     
     try {
@@ -94,7 +88,13 @@ export default function ProfilePage() {
     } finally {
       setDataLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      loadProfileData()
+    }
+  }, [user, loadProfileData])
 
   if (loading || !user) {
     return (

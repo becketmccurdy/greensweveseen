@@ -73,11 +73,9 @@ export function InviteFriend() {
   }
 
   return (
-    <Card>
+    <Card data-testid="invite-friend">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Share2 className="h-5 w-5" /> Invite a Friend
-        </CardTitle>
+        <CardTitle>Invite Friends</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -92,13 +90,27 @@ export function InviteFriend() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={createInvite} disabled={loading}>
+          <Button 
+            onClick={createInvite} 
+            disabled={loading}
+            aria-describedby="invite-help"
+          >
             {loading ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating...</>) : (<><LinkIcon className="h-4 w-4 mr-2" />Generate Link</>)}
           </Button>
-          <Button variant="outline" onClick={copyLink} disabled={!inviteUrl}>
+          <Button 
+            variant="outline" 
+            onClick={copyLink} 
+            disabled={!inviteUrl}
+            aria-label={copied ? "Link copied to clipboard" : "Copy invite link to clipboard"}
+          >
             {copied ? (<><Check className="h-4 w-4 mr-2" />Copied</>) : (<><Copy className="h-4 w-4 mr-2" />Copy Link</>)}
           </Button>
-          <Button variant="outline" onClick={webShare} disabled={!inviteUrl}>
+          <Button 
+            variant="outline" 
+            onClick={webShare} 
+            disabled={!inviteUrl}
+            aria-label="Share invite link"
+          >
             <Share2 className="h-4 w-4 mr-2" />Share
           </Button>
           <a href={inviteUrl ? `mailto:?subject=Join me on GreensWeveSeen&body=${encodeURIComponent(inviteUrl)}` : undefined}>
@@ -108,6 +120,10 @@ export function InviteFriend() {
             <Button variant="ghost" disabled={!inviteUrl}><Phone className="h-4 w-4 mr-2" />SMS</Button>
           </a>
         </div>
+
+        <p id="invite-help" className="text-sm text-gray-600 mt-4">
+          Enter an email or phone number to create a personalized invite link, or generate a general link to share.
+        </p>
 
         {inviteUrl && (
           <p className="text-xs text-gray-500 mt-2 break-all">Invite URL: {inviteUrl}</p>

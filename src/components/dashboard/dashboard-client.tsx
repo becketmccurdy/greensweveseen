@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRoundsStore } from '@/lib/stores/rounds-store'
 import { KPICards } from './kpi-cards'
 import { RecentRounds } from './recent-rounds'
+import { DashboardNoRounds } from '@/components/empty-states/dashboard-no-rounds'
 
 interface Round {
   id: string
@@ -71,6 +72,11 @@ export function DashboardClient({ initialRounds, initialKPIData }: DashboardClie
       handicap: averageScore, // Simplified handicap for now
       friendsRoundsCount,
     }
+  }
+
+  // Show empty state if no rounds exist
+  if (currentRounds.length === 0) {
+    return <DashboardNoRounds />
   }
 
   return (

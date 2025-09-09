@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -68,11 +68,7 @@ export function StatsClient({ profile }: StatsClientProps) {
   const [period, setPeriod] = useState('all')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadStats()
-  }, [period])
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -90,7 +86,11 @@ export function StatsClient({ profile }: StatsClientProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => {
+    loadStats()
+  }, [period, loadStats])
 
   if (loading) {
     return (

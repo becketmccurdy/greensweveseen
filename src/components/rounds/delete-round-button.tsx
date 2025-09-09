@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import * as toast from '@/lib/ui/toast'
 
 interface DeleteRoundButtonProps {
   roundId: string
@@ -17,19 +18,22 @@ export function DeleteRoundButton({ roundId, courseName }: DeleteRoundButtonProp
 
   const handleDelete = async () => {
     setIsDeleting(true)
-    try {
-      const response = await fetch(`/api/rounds/${roundId}`, {
-        method: 'DELETE',
-      })
+    
+    const deleteAction = fetch(`/api/rounds/${roundId}`, {
+      method: 'DELETE',
+    })
 
-      if (response.ok) {
-        router.push('/dashboard')
-        router.refresh()
-      } else {
-        alert('Failed to delete round')
-      }
+    try {
+      await toast.serverAction(deleteAction, {
+        loading: `Deleting round from ${courseName}...`,
+        success: 'Round deleted successfully!',
+        error: 'Failed to delete round. Please try again.',
+      })
+      
+      router.push('/dashboard')
+      router.refresh()
     } catch (error) {
-      alert('Failed to delete round')
+      console.error('Delete error:', error)
     } finally {
       setIsDeleting(false)
       setShowConfirm(false)

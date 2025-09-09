@@ -5,7 +5,7 @@ export default function PrivacyPage() {
       <p>Last updated: September 5, 2025</p>
 
       <p>
-        GreensWeveSeen ("we", "us", or "our") operates a personal golf score tracking
+        GreensWeveSeen (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates a personal golf score tracking
         application. This Privacy Policy explains how we collect, use, and protect your
         information when you use our website and services.
       </p>

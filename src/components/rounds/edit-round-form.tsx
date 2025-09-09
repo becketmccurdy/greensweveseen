@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
+import * as toast from '@/lib/ui/toast'
 
 interface Course {
   id: string
@@ -55,29 +56,30 @@ export function EditRoundForm({ round, courses }: EditRoundFormProps) {
     e.preventDefault()
     setLoading(true)
 
-    try {
-      const response = await fetch(`/api/rounds/${round.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          courseId,
-          date: new Date(date).toISOString(),
-          score: parseInt(score),
-          notes: notes.trim() || null,
-        }),
-      })
+    const updateAction = fetch(`/api/rounds/${round.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        courseId,
+        date: new Date(date).toISOString(),
+        score: parseInt(score),
+        notes: notes.trim() || null,
+      }),
+    })
 
-      if (response.ok) {
-        router.push(`/rounds/${round.id}`)
-        router.refresh()
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to update round')
-      }
+    try {
+      await toast.serverAction(updateAction, {
+        loading: 'Updating round...',
+        success: 'Round updated successfully!',
+        error: 'Failed to update round. Please try again.',
+      })
+      
+      router.push(`/rounds/${round.id}`)
+      router.refresh()
     } catch (error) {
-      alert('Failed to update round')
+      console.error('Update error:', error)
     } finally {
       setLoading(false)
     }

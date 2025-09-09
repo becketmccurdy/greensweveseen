@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - GreensWeveSeen</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f9fafb;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      text-align: center;
+      max-width: 480px;
+      background: white;
+      padding: 48px 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 28px;
+      font-weight: 700;
+      color: #111827;
+    }
+    p {
+      margin: 0 0 32px;
+      color: #6b7280;
+      line-height: 1.6;
+      font-size: 16px;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .retry-btn {
+      background: #22c55e;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+      min-width: 140px;
+    }
+    .retry-btn:hover {
+      background: #16a34a;
+    }
+    .home-link {
+      color: #6b7280;
+      text-decoration: none;
+      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+    .home-link:hover {
+      color: #22c55e;
+      background: #f0fdf4;
+    }
+    .features {
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .features h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 16px;
+    }
+    .feature-list {
+      text-align: left;
+      display: inline-block;
+    }
+    .feature-list li {
+      margin: 8px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .feature-list li::before {
+      content: "⛳";
+      margin-right: 8px;
+    }
+  </style>
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+        
+        p {
+            color: #6b7280;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        
+        .features {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .features h3 {
+            color: #374151;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .features-list {
+            list-style: none;
+            text-align: left;
+        }
+        
+        .features-list li {
+            color: #6b7280;
+            font-size: 14px;
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+        
+        .features-list li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .retry-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-right: 12px;
+        }
+        
+        .retry-btn:hover {
+            background: #4338ca;
+        }
+        
+        .home-btn {
+            background: transparent;
+            color: #6b7280;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .home-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .status {
+            margin-top: 24px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.online {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .status.offline {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="icon">🏌️</div>
+        <h1>You're Offline</h1>
+        <p>
+            No internet connection detected. Don't worry - you can still view your cached golf data 
+            and some features will work offline.
+        </p>
+        
+        <div class="features">
+            <h3>Available Offline:</h3>
+            <ul class="features-list">
+                <li>View your cached dashboard and recent rounds</li>
+                <li>Browse previously loaded course data</li>
+                <li>Access your golf statistics</li>
+                <li>View friend activities from cache</li>
+            </ul>
+        </div>
+        
+        <div>
+            <button class="retry-btn" onclick="retryConnection()">Try Again</button>
+            <a href="/dashboard" class="home-btn">View Dashboard</a>
+        </div>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        function updateStatus() {
+            const status = document.getElementById('status');
+            if (navigator.onLine) {
+                status.textContent = 'Connection restored! You can now access all features.';
+                status.className = 'status online';
+                status.style.display = 'block';
+            } else {
+                status.textContent = 'Still offline. Some features may be limited.';
+                status.className = 'status offline';
+                status.style.display = 'block';
+            }
+        }
+        
+        function retryConnection() {
+            updateStatus();
+            if (navigator.onLine) {
+                // Attempt to reload or redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
+            }
+        }
+        
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            updateStatus();
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 2000);
+        });
+        
+        window.addEventListener('offline', updateStatus);
+        
+        // Initial status check
+        if (navigator.onLine) {
+            setTimeout(updateStatus, 500);
+        }
+    </script>
+</body>
+</html>

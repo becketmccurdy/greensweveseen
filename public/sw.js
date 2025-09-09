@@ -1,8 +1,11 @@
 // public/sw.js
-const CACHE_VERSION = 'v4'
+const CACHE_VERSION = 'v5'
 const APP_CACHE = `greensweveseen-${CACHE_VERSION}`
+const API_CACHE = `greensweveseen-api-${CACHE_VERSION}`
 const CORE_ASSETS = [
   '/',
+  '/dashboard',
+  '/offline.html',
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
@@ -22,7 +25,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((names) =>
       Promise.all(
         names.map((name) => {
-          if (name !== APP_CACHE) return caches.delete(name)
+          if (name !== APP_CACHE && name !== API_CACHE) return caches.delete(name)
         })
       )
     )
@@ -45,6 +48,18 @@ function isAPI(url) {
   return url.pathname.startsWith('/api/')
 }
 
+function isAPIGet(request, url) {
+  return url.pathname.startsWith('/api/') && request.method === 'GET'
+}
+
+function isDashboard(url) {
+  return url.pathname === '/dashboard' || url.pathname.startsWith('/dashboard/')
+}
+
+function isMutatingRequest(request) {
+  return ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request
   const url = new URL(request.url)
@@ -52,40 +67,104 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin
   if (url.origin !== location.origin) return
 
-  if (isAPI(url)) {
-    // Network-first for APIs; do not cache auth-sensitive data
+  // Never cache mutating requests (POST, PUT, DELETE, PATCH)
+  if (isMutatingRequest(request)) {
+    event.respondWith(fetch(request))
+    return
+  }
+
+  // API GET requests - Stale While Revalidate
+  if (isAPIGet(request, url)) {
     event.respondWith(
-      fetch(request).catch(() => caches.match(request))
+      caches.open(API_CACHE).then(async (cache) => {
+        const cached = await cache.match(request)
+        
+        const fetchPromise = fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              cache.put(request, response.clone())
+            }
+            return response
+          })
+          .catch(() => {
+            // Return cached response if network fails
+            return cached || new Response('{"error": "Network unavailable"}', {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' }
+            })
+          })
+        
+        // Return cached immediately if available, otherwise wait for network
+        if (cached) {
+          fetchPromise.catch(() => {}) // Prevent unhandled rejection
+          return cached
+        }
+        
+        return fetchPromise
+      })
     )
     return
   }
 
+  // Dashboard pages - Stale While Revalidate
+  if (isDashboard(url) && isHTMLRequest(request)) {
+    event.respondWith(
+      caches.open(APP_CACHE).then(async (cache) => {
+        const cached = await cache.match(request)
+        
+        const fetchPromise = fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              cache.put(request, response.clone())
+            }
+            return response
+          })
+          .catch(async () => {
+            // Return cached response or offline fallback
+            return cached || caches.match('/offline.html') || new Response('Offline', { status: 503 })
+          })
+        
+        // Return cached immediately if available, otherwise wait for network
+        if (cached) {
+          fetchPromise.catch(() => {}) // Prevent unhandled rejection
+          return cached
+        }
+        
+        return fetchPromise
+      })
+    )
+    return
+  }
+
+  // Other HTML requests - Network first with offline fallback
   if (isHTMLRequest(request)) {
-    // Network-first for navigation/doc
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const resClone = res.clone()
-          caches.open(APP_CACHE).then((cache) => cache.put(request, resClone))
+          if (res.ok) {
+            const resClone = res.clone()
+            caches.open(APP_CACHE).then((cache) => cache.put(request, resClone))
+          }
           return res
         })
         .catch(async () => {
           const cached = await caches.match(request)
-          // Fall back to cached homepage if available
-          return cached || caches.match('/')
+          return cached || caches.match('/offline.html') || caches.match('/')
         })
     )
     return
   }
 
+  // Static assets - Cache first
   if (isStaticAsset(url)) {
-    // Cache-first for hashed static assets
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached
         return fetch(request).then((res) => {
-          const resClone = res.clone()
-          caches.open(APP_CACHE).then((cache) => cache.put(request, resClone))
+          if (res.ok) {
+            const resClone = res.clone()
+            caches.open(APP_CACHE).then((cache) => cache.put(request, resClone))
+          }
           return res
         })
       })
@@ -93,13 +172,15 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Images - Stale while revalidate
   if (isImage(url)) {
-    // Stale-while-revalidate for images
     event.respondWith(
       caches.match(request).then((cached) => {
         const fetchPromise = fetch(request).then((res) => {
-          const resClone = res.clone()
-          caches.open(APP_CACHE).then((cache) => cache.put(request, resClone))
+          if (res.ok) {
+            const resClone = res.clone()
+            caches.open(APP_CACHE).then((cache) => cache.put(request, resClone))
+          }
           return res
         })
         return cached || fetchPromise

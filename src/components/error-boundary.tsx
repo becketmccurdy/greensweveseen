@@ -23,7 +23,7 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600">
-            We encountered an unexpected error. This has been logged and we'll look into it.
+            We encountered an unexpected error. This has been logged and we&apos;ll look into it.
           </p>
           <details className="text-sm">
             <summary className="cursor-pointer text-gray-500 hover:text-gray-700">

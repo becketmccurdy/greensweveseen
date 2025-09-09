@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { UserPlus, Check, X, Trash2, Loader2 } from 'lucide-react'
+import { UserPlus, Check, X, Trash2, Loader2, Users } from 'lucide-react'
 import { toast } from 'sonner'
+import { FriendsListSkeleton } from './friends-skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Friend {
   id: string
@@ -163,16 +165,7 @@ export function FriendsList({ user }: FriendsListProps) {
   }
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading friends...</span>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <FriendsListSkeleton />
   }
 
   const acceptedFriends = friends.filter(f => f.isAccepted)
@@ -190,7 +183,19 @@ export function FriendsList({ user }: FriendsListProps) {
         </CardHeader>
         <CardContent>
           {acceptedFriends.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No friends yet. Send a friend request to get started!</p>
+            <EmptyState
+              icon={Users}
+              title="No friends yet"
+              description="Connect with fellow golfers to track their progress and share your achievements."
+              action={{
+                label: "Invite Friends",
+                onClick: () => {
+                  // Scroll to invite section
+                  const inviteSection = document.querySelector('[data-testid="invite-friend"]')
+                  inviteSection?.scrollIntoView({ behavior: 'smooth' })
+                }
+              }}
+            />
           ) : (
             <div className="space-y-3">
               {acceptedFriends.map((friend) => (

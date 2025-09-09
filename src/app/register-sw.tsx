@@ -26,9 +26,23 @@ export function RegisterSW() {
           label: 'Update',
           onClick: doUpdate,
         },
+        duration: 10000,
       })
     }
 
+    const onOffline = () => {
+      toast('You are now offline. Cached data will be used.', {
+        duration: 5000,
+      })
+    }
+
+    const onOnline = () => {
+      toast('Connection restored! Syncing latest data...', {
+        duration: 3000,
+      })
+    }
+
+    // Register service worker
     navigator.serviceWorker.register('/sw.js').then((registration) => {
       // Check for updates on load
       if (registration.waiting) onUpdate(registration)
@@ -39,9 +53,21 @@ export function RegisterSW() {
           if (newWorker.state === 'installed') onUpdate(registration)
         })
       })
+
+      console.log('Service Worker registered successfully')
     }).catch((err) => {
       console.error('SW registration failed:', err)
     })
+
+    // Online/offline event listeners
+    window.addEventListener('offline', onOffline)
+    window.addEventListener('online', onOnline)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('offline', onOffline)
+      window.removeEventListener('online', onOnline)
+    }
   }, [])
 
   return null

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
+import { friendActionSchema } from '@/lib/validations/invite'
+import { generateInviteToken } from '@/lib/utils/crypto'
 
 export async function GET() {
   const supabase = await createClient()
@@ -85,14 +87,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
-  const { friendEmail, action, friendshipId } = body
-
   try {
+    const body = await request.json()
+    const validatedData = friendActionSchema.parse(body)
+    
+    const { action } = validatedData
     if (action === 'send_request') {
       // Find the friend by email
       const friendProfile = await prisma.userProfile.findUnique({
-        where: { email: friendEmail }
+        where: { email: validatedData.friendEmail }
       })
 
       if (!friendProfile) {
@@ -151,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'accept') {
       const friendship = await prisma.friendship.update({
-        where: { id: friendshipId },
+        where: { id: validatedData.friendshipId },
         data: { status: 'ACCEPTED' },
         include: {
           user: {
@@ -180,7 +183,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'decline') {
       await prisma.friendship.delete({
-        where: { id: friendshipId }
+        where: { id: validatedData.friendshipId }
       })
 
       return NextResponse.json({ success: true })
@@ -188,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'remove') {
       await prisma.friendship.delete({
-        where: { id: friendshipId }
+        where: { id: validatedData.friendshipId }
       })
 
       return NextResponse.json({ success: true })

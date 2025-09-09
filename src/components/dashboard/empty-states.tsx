@@ -9,7 +9,7 @@ export function EmptyDashboard() {
         <CardTitle>Welcome to GreensWeveSeen</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-gray-600">You haven\'t recorded any rounds yet.</p>
+        <p className="text-gray-600">You haven&apos;t recorded any rounds yet.</p>
         <Button asChild>
           <Link href="/rounds/new">Add your first round</Link>
         </Button>

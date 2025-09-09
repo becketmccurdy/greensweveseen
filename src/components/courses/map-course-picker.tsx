@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { MapPin, Search, Loader2 } from 'lucide-react'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
@@ -29,6 +30,8 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<MapCourse[]>([])
   const [dbNearby, setDbNearby] = useState<MapCourse[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchTimeoutId, setSearchTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
@@ -72,6 +75,15 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutId) {
+        clearTimeout(searchTimeoutId)
+      }
+    }
+  }, [searchTimeoutId])
+
   useEffect(() => {
     // Render DB markers
     const map = mapRef.current
@@ -109,15 +121,27 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
     }
   }
 
-  const searchMapbox = async () => {
-    if (!search.trim() || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) return
+  const searchMapbox = useCallback(async (searchTerm: string) => {
+    if (!searchTerm.trim() || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+      setResults([])
+      return
+    }
+    
+    setSearchLoading(true)
     try {
-      const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json`)
-      url.searchParams.set('types', 'poi')
+      const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchTerm)}.json`)
+      url.searchParams.set('types', 'poi,address')
       url.searchParams.set('limit', '10')
       url.searchParams.set('proximity', `${center[0]},${center[1]}`)
       url.searchParams.set('access_token', process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
-      const r = await fetch(url.toString())
+      
+      // Add golf-related keywords to improve search results
+      const golfTerms = ['golf', 'course', 'club', 'country club']
+      const searchWithGolf = golfTerms.some(term => searchTerm.toLowerCase().includes(term)) 
+        ? searchTerm 
+        : `${searchTerm} golf course`
+      
+      const r = await fetch(url.toString().replace(encodeURIComponent(searchTerm), encodeURIComponent(searchWithGolf)))
       const json = await r.json()
       const items: MapCourse[] = (json.features || [])
         .filter((f: any) => f.center && f.place_name)
@@ -130,7 +154,25 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
       setResults(items)
     } catch (e) {
       console.error('Mapbox search failed:', e)
+      setResults([])
+    } finally {
+      setSearchLoading(false)
     }
+  }, [center])
+
+  // Debounced search
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    
+    if (searchTimeoutId) {
+      clearTimeout(searchTimeoutId)
+    }
+    
+    const timeoutId = setTimeout(() => {
+      searchMapbox(value)
+    }, 500) // 500ms debounce
+    
+    setSearchTimeoutId(timeoutId)
   }
 
   const createAndSelect = async (c: MapCourse) => {
@@ -154,25 +196,74 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Input placeholder="Search places (e.g. golf course)" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <Button type="button" onClick={searchMapbox}>Search</Button>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input 
+            placeholder="Search golf courses (e.g. Pebble Beach)" 
+            value={search} 
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-10"
+          />
+          {searchLoading && (
+            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+          )}
+        </div>
         {onClose && (
           <Button variant="outline" type="button" onClick={onClose}>Close</Button>
         )}
       </div>
+      
       <div ref={mapContainer} style={{ height }} className="rounded-lg overflow-hidden border" />
 
-      {results.length > 0 && (
+      {/* Database courses */}
+      {dbNearby.length > 0 && (
         <div className="space-y-2">
-          <div className="text-sm text-gray-600">Mapbox results</div>
-          <div className="grid grid-cols-1 gap-2">
-            {results.map((r, i) => (
-              <button key={i} className="text-left p-3 border rounded hover:bg-gray-50" onClick={() => createAndSelect(r)}>
-                <div className="font-medium text-gray-900">{r.name}</div>
-                {r.location && <div className="text-sm text-gray-600">{r.location}</div>}
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="h-4 w-4" />
+            <span>Nearby courses ({dbNearby.length})</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+            {dbNearby.map((course, i) => (
+              <button 
+                key={course.id || i} 
+                className="text-left p-3 border rounded hover:bg-gray-50 transition-colors"
+                onClick={() => onSelect(course)}
+              >
+                <div className="font-medium text-gray-900">{course.name}</div>
+                {course.location && <div className="text-sm text-gray-600">{course.location}</div>}
+                <div className="text-xs text-gray-500">Par {course.par || 72}</div>
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Search results */}
+      {results.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Search className="h-4 w-4" />
+            <span>Search results ({results.length})</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+            {results.map((r, i) => (
+              <button 
+                key={i} 
+                className="text-left p-3 border rounded hover:bg-gray-50 transition-colors"
+                onClick={() => createAndSelect(r)}
+              >
+                <div className="font-medium text-gray-900">{r.name}</div>
+                {r.location && <div className="text-sm text-gray-600">{r.location}</div>}
+                <div className="text-xs text-green-600">Click to add as new course</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {search && results.length === 0 && !searchLoading && (
+        <div className="text-sm text-gray-500 text-center py-4">
+          No results found. Try a different search term.
         </div>
       )}
     </div>

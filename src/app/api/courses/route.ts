@@ -10,26 +10,90 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q')?.trim() || ''
+    const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null
+    const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null
+    const distance = searchParams.get('distance') ? parseInt(searchParams.get('distance')!) : null
+    const sort = searchParams.get('sort') || 'name'
+    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500)
 
-    const courses = q
-      ? await prisma.course.findMany({
-          where: {
+    let courses: any[] = []
+
+    // If we have coordinates and distance, use spatial search
+    if (lat != null && lng != null && distance != null && isFinite(lat) && isFinite(lng)) {
+      try {
+        // Use PostGIS for spatial queries with optional text search
+        const distanceMeters = distance * 1000 // Convert km to meters
+        const textCondition = q ? `AND (LOWER(name) LIKE LOWER($4) OR LOWER(location) LIKE LOWER($4))` : ''
+        const params = [lng, lat, distanceMeters, q ? `%${q}%` : undefined].filter(p => p !== undefined)
+        
+        const query = `
+          SELECT id, name, location, par, holes, rating, slope, description, 
+                 latitude, longitude, "createdById", "createdAt", "updatedAt",
+                 CASE WHEN geom IS NOT NULL THEN
+                   ST_Distance(
+                     geom,
+                     ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                   ) / 1000.0
+                 ELSE NULL END AS distance_km
+          FROM courses
+          WHERE geom IS NOT NULL
+            AND ST_DWithin(
+              geom,
+              ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+              $3
+            )
+            ${textCondition}
+          ORDER BY ${sort === 'distance' ? 'distance_km ASC' : sort === 'name' ? 'name ASC' : 'name ASC'}
+          LIMIT ${limit};
+        `
+        
+        courses = await prisma.$queryRawUnsafe(query, ...params)
+      } catch (e) {
+        console.warn('PostGIS spatial query failed, falling back to simple filtering:', e)
+        // Fallback to simple coordinate-based filtering
+        const degreeDistance = distance / 111 // Rough conversion km to degrees
+        const where: any = {
+          AND: [
+            { latitude: { gte: lat - degreeDistance, lte: lat + degreeDistance } },
+            { longitude: { gte: lng - degreeDistance, lte: lng + degreeDistance } },
+          ]
+        }
+        
+        if (q) {
+          where.AND.push({
             OR: [
-              { name: { contains: q, mode: 'insensitive' } },
-              { location: { contains: q, mode: 'insensitive' } },
-            ],
-          },
-          orderBy: { name: 'asc' },
-          take: 100,
+              { name: { contains: q, mode: 'insensitive' as any } },
+              { location: { contains: q, mode: 'insensitive' as any } },
+            ]
+          })
+        }
+        
+        courses = await prisma.course.findMany({
+          where,
+          orderBy: sort === 'name' ? { name: 'asc' } : { name: 'asc' },
+          take: limit,
         })
-      : await prisma.course.findMany({
-          orderBy: { name: 'asc' },
-          take: 100,
-        })
+      }
+    } else {
+      // Standard text-based search
+      const where = q ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as any } },
+          { location: { contains: q, mode: 'insensitive' as any } },
+        ]
+      } : {}
+
+      courses = await prisma.course.findMany({
+        where,
+        orderBy: sort === 'name' ? { name: 'asc' } : { name: 'asc' },
+        take: limit,
+      })
+    }
 
     const shaped = courses.map((c: any) => ({
       ...c,
       owned: user ? c.createdById === user.id : false,
+      distance_km: c.distance_km || null,
     }))
 
     return NextResponse.json(shaped)
@@ -65,6 +129,32 @@ export async function POST(request: Request) {
 
     const latitude = body.latitude !== undefined ? Number(body.latitude) : null
     const longitude = body.longitude !== undefined ? Number(body.longitude) : null
+
+    // Check for existing course by name and proximity if lat/lng provided
+    if (latitude != null && longitude != null) {
+      const threshold = 100 // meters
+      try {
+        const existing = await prisma.$queryRaw<any[]>`
+          SELECT id, name, location, par, latitude, longitude 
+          FROM courses 
+          WHERE geom IS NOT NULL
+            AND ST_DWithin(
+              geom,
+              ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography,
+              ${threshold}
+            )
+            AND LOWER(name) = LOWER(${body.name})
+          LIMIT 1;
+        `
+        
+        if (existing.length > 0) {
+          // Return existing course instead of creating duplicate
+          return NextResponse.json(existing[0])
+        }
+      } catch (e) {
+        console.warn('PostGIS deduplication failed, proceeding with creation:', e)
+      }
+    }
 
     const course = await prisma.course.create({
       data: {

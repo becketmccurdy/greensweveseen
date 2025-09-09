@@ -77,7 +77,7 @@ export function RecentRounds({ rounds }: RecentRoundsProps) {
                   {round.weather && <span>• {round.weather}</span>}
                 </div>
                 {round.notes && (
-                  <p className="text-sm text-gray-500 mt-1 italic">"{round.notes}"</p>
+                  <p className="text-sm text-gray-500 mt-1 italic">&quot;{round.notes}&quot;</p>
                 )}
               </div>
               <div className="text-right">

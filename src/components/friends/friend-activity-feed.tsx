@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Target, Zap, Star, Award, Loader2 } from 'lucide-react'
+import { Trophy, Target, Zap, Star, Award, Loader2, Activity } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { FriendActivitySkeleton } from './friends-skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Activity {
   id: string
@@ -130,16 +132,7 @@ export function FriendActivityFeed({ user }: FriendActivityFeedProps) {
   }
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading activities...</span>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <FriendActivitySkeleton />
   }
 
   return (
@@ -149,7 +142,11 @@ export function FriendActivityFeed({ user }: FriendActivityFeedProps) {
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No recent activity from friends</p>
+          <EmptyState
+            icon={Activity}
+            title="No friend activity yet"
+            description="When your friends complete rounds or achieve milestones, their activity will appear here."
+          />
         ) : (
           <div className="space-y-4">
             {activities.map((activity) => (

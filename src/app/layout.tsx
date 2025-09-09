@@ -5,6 +5,9 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { RegisterSW } from './register-sw'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/contexts/auth-context'
+import { InstallPrompt } from '@/components/pwa/install-prompt'
+import { OfflineIndicator } from '@/components/pwa/offline-indicator'
+import { SkipLink } from '@/components/ui/skip-link'
 import Link from 'next/link'
 import { Analytics } from '@vercel/analytics/react'
 
@@ -37,9 +40,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <SkipLink />
         <AuthProvider>
+          <OfflineIndicator />
           <Toaster />
-          {children}
+          <main id="main-content">
+            {children}
+          </main>
+          <InstallPrompt />
           <RegisterSW />
           <Analytics />
           <footer className="mt-12 border-t">

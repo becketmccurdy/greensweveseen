@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
+import { createInviteSchema } from '@/lib/validations/invite'
 import crypto from 'node:crypto'
 
 export async function POST(request: NextRequest) {
@@ -9,11 +10,16 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { email, phone } = body || {}
-
-  if (!email && !phone) {
-    return NextResponse.json({ error: 'Provide an email or phone' }, { status: 400 })
+  const validation = createInviteSchema.safeParse(body)
+  
+  if (!validation.success) {
+    return NextResponse.json({ 
+      error: 'Invalid input', 
+      details: validation.error.flatten().fieldErrors 
+    }, { status: 400 })
   }
+
+  const { email, phone } = validation.data
 
   try {
     const token = crypto.randomBytes(24).toString('hex')

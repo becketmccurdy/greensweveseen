@@ -1,13 +1,15 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // pooled, used at runtime
+  directUrl = env("DATABASE_URL")   // using same URL for now
 }
 
 model UserProfile {
@@ -163,6 +165,7 @@ enum ActivityType {
   EAGLE
   BIRDIE
   COURSE_RECORD
+  FRIEND_ADDED
 }
 
 // New: Friend invites for sharing links via email/phone

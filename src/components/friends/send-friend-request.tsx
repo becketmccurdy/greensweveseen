@@ -88,7 +88,7 @@ export function SendFriendRequest({ onRequestSent }: SendFriendRequestProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Friend's Email</Label>
+            <Label htmlFor="email">Friend&apos;s Email</Label>
             <Input
               id="email"
               type="email"
@@ -125,7 +125,7 @@ export function SendFriendRequest({ onRequestSent }: SendFriendRequestProps) {
         </form>
         <p className="text-sm text-gray-500 mt-3">
           Enter the email address of the person you want to add as a friend. 
-          They'll receive a notification to accept your request.
+          They&apos;ll receive a notification to accept your request.
         </p>
       </CardContent>
     </Card>
