@@ -20,11 +20,21 @@ export default function HomePage() {
   
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-green-600 mb-4">GreensWeveSeen</div>
+          <div className="text-lg text-gray-600">Loading...</div>
+        </div>
       </div>
     )
   }
   
-  return null
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+      <div className="text-center">
+        <div className="text-2xl font-bold text-green-600">GreensWeveSeen</div>
+        <div className="text-gray-600">Redirecting...</div>
+      </div>
+    </div>
+  )
 }
