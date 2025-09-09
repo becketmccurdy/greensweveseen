@@ -1,60 +1,58 @@
-# Deployment Instructions for greensweveseen.com
+# Deployment (Vercel + Supabase)
 
-## 1. Create GitHub Repository
-1. Go to https://github.com/new
-2. Repository name: `greensweveseen`
-3. Make it public
-4. Don't initialize with README (we already have one)
-5. Click "Create repository"
+This project is optimized for Vercel (Next.js) with Supabase for Auth + Postgres.
 
-## 2. Push to GitHub ✅ COMPLETED
-The code has been pushed to: https://github.com/becketmccurdy/greensweveseen1
+## 1) Connect the repo to Vercel
+1. Go to https://vercel.com/new
+2. Import the GitHub repo `becketmccurdy/greensweveseen1`
+3. Framework preset will auto-detect Next.js
 
-## 3. Deploy to Vercel
-1. Go to https://vercel.com
-2. Click "New Project"
-3. Import your GitHub repository `greensweveseen`
-4. Configure environment variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`: https://aqagrxavkpskjdtpwnjy.supabase.co
+## 2) Set environment variables (Vercel Project → Settings → Environment Variables)
 
-## 📋 Environment Setup
-
-Your production environment should contain:
+Required:
 
 ```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://aqagrxavkpskjdtpwnjy.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-DATABASE_URL=postgresql://postgres:[password]@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres
+# Public
+NEXT_PUBLIC_SUPABASE_URL=https://<PROJECT_REF>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
+NEXT_PUBLIC_APP_URL=https://<your-vercel-domain>
+NEXT_PUBLIC_MAPBOX_TOKEN=<mapbox_token>
 
-# Production URL (Firebase Hosting with Cloud Run backend)
-NEXT_PUBLIC_APP_URL=https://greensweveseen.web.app
+# Prisma runtime (use Supabase Connection Pooling, port 6543)
+DATABASE_URL="postgresql://USER:PASSWORD@db.<PROJECT_REF>.supabase.co:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+
+# Prisma CLI (direct connection, port 5432)
+DIRECT_URL="postgresql://USER:PASSWORD@db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require"
 ```
 
-## ✅ DEPLOYMENT COMPLETE
+Tip: Find both URLs in Supabase → Database → Connection string (URI) and Connection pooling.
 
-**Live URLs:**
-- **Primary App**: https://greensweveseen.web.app (Firebase Hosting)
-- **Backend Service**: https://greensweveseen-303526391321.us-central1.run.app (Cloud Run)
+## 3) Prisma Migrations
 
-The app uses Firebase Hosting with rewrites to Cloud Run for optimal performance and custom domain support.
-
-## 🚀 Quick Deployment
-
-### Option 1: Automated Deployment Script
+Locally (development):
 
 ```bash
-# Set your Google Cloud project
-export GOOGLE_CLOUD_PROJECT="your-project-id"
-export GOOGLE_CLOUD_REGION="us-central1"
-
-# Run the deployment script
-./deploy.sh
-
-# Set up environment variables (do NOT commit real values)
-./setup-env.sh
-NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_anon_key>
-DATABASE_URL=postgresql://postgres:<password>@db.<your-project>.supabase.co:5432/postgres
-NEXT_PUBLIC_APP_URL=https://greensweveseen.com
+npx prisma migrate dev
+# or, if prototyping without creating migrations:
+# npx prisma db push
 ```
+
+Production (after Vercel deploy):
+
+```bash
+npx prisma migrate deploy
+```
+
+Prisma will use `DIRECT_URL` for migrations and `DATABASE_URL` at runtime.
+
+## 4) Apply RLS policies
+
+In the Supabase SQL Editor, run the contents of `supabase-rls-policies-safe.sql` to ensure Row Level Security is enforced across all tables (including `round_friends`).
+
+## 5) Done
+
+Vercel will automatically build on pushes and create preview deployments for PRs.
+
+## Notes
+- `next.config.js` uses `output: 'standalone'`, which is harmless on Vercel.
+- Keep all Prisma access on the server (as written), and never expose service-role keys to the client.

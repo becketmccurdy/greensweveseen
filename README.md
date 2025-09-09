@@ -27,13 +27,17 @@ A modern, mobile-first golf score tracking application built with Next.js 15, Su
 Update `.env.local` with your Supabase credentials:
 
 ```bash
-# Supabase
+# Public
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-DATABASE_URL=your_supabase_postgres_connection_string
-
-# App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+
+# Prisma runtime (pooled via Supabase pgBouncer, port 6543)
+DATABASE_URL="postgresql://USER:PASSWORD@db.PROJECT_REF.supabase.co:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+
+# Prisma CLI (direct connection, port 5432)
+DIRECT_URL="postgresql://USER:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres?sslmode=require"
 ```
 
 ### 2. Database Setup
@@ -41,9 +45,13 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 1. Create a new Supabase project
 2. Run the database migration:
    ```bash
-   npx prisma db push
+   # development
+   npx prisma migrate dev
+
+   # (optional) if you are prototyping without creating migrations
+   # npx prisma db push
    ```
-3. Apply RLS policies by running the SQL in `supabase-rls-policies.sql` in your Supabase SQL editor
+3. Apply RLS policies by running the SQL in `supabase-rls-policies-safe.sql` in your Supabase SQL editor
 
 ### 3. Install Dependencies
 
@@ -143,6 +151,11 @@ The app is configured for Vercel deployment with:
 - Automatic builds on push
 - Environment variable management
 - Preview deployments
+
+Vercel setup tips:
+- Set `DATABASE_URL` to the Supabase Connection Pooling URI (port 6543) with `pgbouncer=true&connection_limit=1&sslmode=require`.
+- Set `DIRECT_URL` to the normal Supabase Postgres URI (port 5432) for Prisma migrations.
+- After deploying, run `npx prisma migrate deploy` against production, then apply `supabase-rls-policies-safe.sql` in Supabase SQL editor.
 
 ## Next Steps
 

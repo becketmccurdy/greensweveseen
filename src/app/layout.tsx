@@ -6,6 +6,7 @@ import { RegisterSW } from './register-sw'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/contexts/auth-context'
 import Link from 'next/link'
+import { Analytics } from '@vercel/analytics/react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -40,6 +41,7 @@ export default function RootLayout({
           <Toaster />
           {children}
           <RegisterSW />
+          <Analytics />
           <footer className="mt-12 border-t">
             <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-gray-500 flex flex-col md:flex-row items-center justify-between gap-2">
               <p>© {new Date().getFullYear()} GreensWeveSeen</p>
