@@ -18,18 +18,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid import request' }, { status: 400 })
     }
 
-    // Check if course already exists in our database
-    const existingCourse = await prisma.course.findFirst({
-      where: {
-        externalId: externalId.toString(),
-        externalSource: 'golfcourseapi'
-      }
-    })
-
-    if (existingCourse) {
-      return NextResponse.json(existingCourse)
-    }
-
     // Fetch course details from external API
     const golfAPI = getGolfCourseAPIClient()
     if (!golfAPI) {
@@ -41,6 +29,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Course not found in external API' }, { status: 404 })
     }
 
+    // Check if course already exists in our database
+    const existingCourse = await prisma.course.findFirst({
+      where: {
+        name: apiCourse.course_name || apiCourse.club_name
+      }
+    })
+
+    if (existingCourse) {
+      return NextResponse.json(existingCourse)
+    }
+
     // Convert and save to our database
     const courseData = golfAPI.convertToLocalCourse(apiCourse)
     
@@ -49,11 +48,12 @@ export async function POST(request: NextRequest) {
         name: courseData.name,
         location: courseData.location,
         par: courseData.par,
-        externalId: courseData.externalId,
-        externalSource: courseData.externalSource,
+        // externalId: courseData.externalId, // Will be enabled after schema migration
+        // externalSource: courseData.externalSource,
         latitude: courseData.latitude,
         longitude: courseData.longitude,
-        address: courseData.address
+        // address: courseData.address,
+        createdById: user.id
       }
     })
 
