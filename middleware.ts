@@ -35,6 +35,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Check if environment variables are available
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.error('Missing Supabase environment variables')
+    const url = request.nextUrl.clone()
+    url.pathname = '/health'
+    return NextResponse.redirect(url)
+  }
+
   // Only run auth middleware for protected routes
   try {
     return await updateSession(request)
