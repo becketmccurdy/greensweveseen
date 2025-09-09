@@ -16,7 +16,7 @@ export function GoogleSignIn() {
     setLoading(true)
     try {
       const supabase = createClient()
-      const redirectTo = `${window.location.origin}${nextPath}`
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
