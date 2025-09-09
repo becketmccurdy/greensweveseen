@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 // GET /api/courses/nearby?lat=..&lng=..&radius=25000
 // Returns courses within radius (meters) ordered by distance
@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const prisma = getPrisma()
     // Prefer PostGIS if geom exists
     const results = await prisma.$queryRaw<any[]>`
       SELECT id, name, location, par, latitude, longitude,
@@ -40,7 +39,6 @@ export async function GET(request: NextRequest) {
     console.error('Nearby courses query failed, falling back without PostGIS:', e)
     // Fallback without PostGIS: naive bounding box by ~radius degrees (~111km per degree)
     const deg = radius / 111000
-    const prisma = getPrisma()
     const results = await prisma.course.findMany({
       where: {
         AND: [

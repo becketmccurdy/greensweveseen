@@ -1,0 +1,173 @@
+Overview
+
+Stack: Next.js 15 (App Router, TS), Tailwind + shadcn/ui, Supabase (Auth), Prisma (Postgres), Zod, Zustand, Playwright, PWA with service worker.
+Architecture: SSR auth via Supabase in API routes and server components; Prisma for all DB access; mobile‑first UI; PWA manifest + SW; optimistic updates via Zustand.
+Status: Code reads as production‑ready. API routes verify session before DB actions, dashboard is data-backed, rounds/new saves to DB, and core RLS SQL included.
+Stack and Config
+
+Dependencies: package.json aligns with your desired stack (Next 15, Prisma 5.20, Supabase SSR 0.7, Tailwind, zod, zustand, framer-motion, Playwright).
+Next config: next.config.js uses output 'standalone' (suitable for Cloud Run).
+TS config: tsconfig.json uses ESNext modules and bundler resolution; target: es5 (works but consider es2020 for smaller polyfills).
+Database and RLS
+
+Prisma schema: prisma/schema.prisma
+Models: 
+UserProfile
+, 
+Course
+, 
+Round
+, Score, Friendship, FriendActivity, FriendInvite, RoundFriend.
+Notable: Round.withFriends:boolean + join table round_friends for participants.
+Indexes: sensible (e.g., 
+Round
+ on [userId, date desc], Score unique on [roundId, hole]).
+RLS policies: supabase-rls-policies-safe.sql
+Enables and forces RLS on all tables, drops-and-recreates named policies.
+Includes policies for round_friends (owner manage, owner/friend select).
+Action required: run this file manually in Supabase SQL Editor after pushing schema.
+Access model: All API routes use Prisma (server-only DB) with app-enforced authorization checks (via Supabase session). This is OK and common, but note that Prisma connects as a DB user that bypasses RLS; security relies on server-side checks already present in each route.
+Auth
+
+Server clients: 
+src/lib/supabase/server.ts
+, 
+src/lib/supabase/middleware.ts
+ with cookie integration.
+Middleware: 
+middleware.ts
+ delegates to Supabase middleware to persist sessions and redirect unauthenticated users away from protected routes.
+Client-side context: src/contexts/auth-context.tsx for reactive user state.
+Login flows: 
+src/components/auth/login-form.tsx
+ supports password, signup, magic link; Google auth component present.
+API Routes (session-guarded)
+
+Rounds: 
+src/app/api/rounds/route.ts
+GET: user’s rounds with course info.
+POST: zod-validated; creates round; accepts withFriends + friendUserIds, validates IDs against accepted friendships, writes round_friends, logs FriendActivity.
+Scores: 
+src/app/api/scores/route.ts
+ bulk upsert per round; recomputes totals.
+Courses: 
+src/app/api/courses/route.ts
+ GET (search), POST (create with optional latitude/longitude; tries to set PostGIS geom via raw SQL).
+Courses Nearby: 
+src/app/api/courses/nearby/route.ts
+ PostGIS distance query with fallback bounding box.
+Profile: 
+src/app/api/profile/route.ts
+ GET/PUT with upsert patterns.
+Friends:
+src/app/api/friends/route.ts
+ fetch, send request, accept, decline, remove; returns unified friend shape (includes userId for share IDs).
+src/app/api/friends/activities/route.ts
+ friend feed with include on user.
+src/app/api/friends/invite/route.ts
+ create invite tokens.
+src/app/api/friends/invite/[token]/route.ts GET invite status; POST to accept and create friendship (one-directional row; code reads symmetric in queries).
+Pages and UI
+
+Protected section layout: src/app/(dashboard)/layout.tsx fetches current user server-side and wraps all dashboard routes with 
+Navigation
+ and 
+ErrorBoundary
+.
+Dashboard: src/app/(dashboard)/dashboard/page.tsx fetches rounds server-side; computes KPIs; renders 
+DashboardClient
+ with initial data.
+Dashboard client: 
+src/components/dashboard/dashboard-client.tsx
+ sets rounds into Zustand; recomputes KPIs; renders 
+KPICards
+ + 
+RecentRounds
+.
+New Round: src/app/(dashboard)/rounds/new/page.tsx + 
+src/components/rounds/new-round-form.tsx
+Mobile-first form, optimistic updates via Zustand, optional hole-by-hole entry, course creation inline, Mapbox picker, friend selector integrated.
+Friends/Settings/Stats: present under src/app/(dashboard)/....
+Navigation: mobile sidebar and links to /dashboard, /rounds/new, /stats, /friends, /settings.
+Invite acceptance: src/app/invite/[token]/page.tsx uses InviteClient (client UI not inspected in this pass).
+State and Validation
+
+State: 
+src/lib/stores/rounds-store.ts
+ tracks rounds; supports optimistic add/confirm/remove flows.
+Validation: zod used in rounds POST; other endpoints rely on basic checks (suggest adding zod later for consistency).
+PWA and Styling
+
+PWA: 
+public/manifest.json
+, 
+public/sw.js
+, registration via 
+src/app/register-sw.tsx
+ with “update available” toast.
+Tailwind config: 
+tailwind.config.ts
+, shadcn/ui primitives are present; global CSS loads Mapbox CSS.
+Mobile-first: Navigation behaves appropriately on mobile with an overlay and slide-in menu.
+Testing
+
+E2E: Playwright specs in tests/
+basic.spec.ts
+: homepage renders, unauth APIs return 401, responsiveness check.
+create-round.spec.ts
+: gated by E2E creds; logs in, creates course + round, verifies redirect to dashboard and recent rounds shows course.
+This aligns with the FIRST TASK goals (auth + data-backed dashboard + new round).
+Notable strengths
+
+SSR auth and middleware wiring is correct and consistent.
+App routes verify session before DB queries.
+Clean Prisma schema with sensible indexes and relations for social features.
+Mapbox nearby search fallback implemented, optional PostGIS supported.
+PWA setup present and non-intrusive.
+Gaps and opportunities
+
+View All Rounds page missing: 
+RecentRounds
+ links to /rounds, but there’s no src/app/(dashboard)/rounds/page.tsx. This link will 404.
+Dashboard friends KPI not surfaced: 
+KPICards
+ interface includes friendsRoundsCount, but it’s not rendered as a card. Add a 5th KPI card or swap one.
+Friends indicator: 
+RecentRounds
+ doesn’t show a “With friends” badge; easy UX win to add a chip for round.withFriends.
+Validation consistency: Only rounds POST uses zod. Consider zod schemas for courses, profile updates, friends actions.
+Minor typing oddities:
+Route/page params are sometimes typed as possibly Promise and awaited (e.g., src/app/invite/[token]/page.tsx, and some API handlers unwrap context.params). It works (await on non-Promise resolves instantly), but consider simplifying to params: { token: string } for clarity.
+TS target: tsconfig.json targets es5. Next will transpile, but you can modernize to es2020 or similar to optimize.
+RLS vs Prisma: With Prisma you bypass RLS at the DB role level. You already guard all API routes with Supabase session and filter by user.id, which is acceptable. Ensure you keep all queries correctly scoped to the current user.
+Prioritized recommendations
+
+Add a Rounds index page
+Create src/app/(dashboard)/rounds/page.tsx that lists rounds (server-side query by user) and links to details.
+This resolves the dead link from 
+RecentRounds
+ to /rounds.
+Surface “friends” in dashboard
+In 
+src/components/dashboard/kpi-cards.tsx
+, add a 5th card for friendsRoundsCount with a Users icon.
+In 
+src/components/dashboard/recent-rounds.tsx
+, render a small “With friends” chip when round.withFriends is true.
+Consistent validation
+Add zod schemas to courses POST/PUT, profile PUT, and friend actions POST for robustness and better error messages.
+Param typings cleanup
+Update pages/handlers to use standard params: { ... } rather than Promise<...>, and simplify handlers that unwrap context.params.
+Optional: TS and lint polish
+Raise TS target to es2020.
+Ensure ESLint rules cover server/client boundary constraints; you already ignore lint during builds in next.config.js, which is fine for Cloud Run.
+RLS application reminder
+After npx prisma db push, run supabase-rls-policies-safe.sql in the Supabase SQL editor (this file includes round_friends policies).
+Keep avoiding service role keys in the client; all server routes already verify sessions properly.
+How to run locally (quick)
+
+npm install
+npx prisma generate && npx prisma db push
+Configure env: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, DATABASE_URL, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_MAPBOX_TOKEN
+Start: npm run dev
+Apply RLS in Supabase SQL editor: run the contents of supabase-rls-policies-safe.sql

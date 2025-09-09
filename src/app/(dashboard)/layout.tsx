@@ -2,6 +2,7 @@ import React from 'react'
 import { Navigation } from '@/components/navigation'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { getCurrentUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardLayout({
   children,
@@ -11,8 +12,8 @@ export default async function DashboardLayout({
   const currentUser = await getCurrentUser()
   
   if (!currentUser) {
-    // This should be handled by middleware, but as a fallback
-    return null
+    const next = '/dashboard'
+    return redirect(`/login?next=${encodeURIComponent(next)}`)
   }
 
   const firstName = currentUser.profile.firstName || currentUser.email?.split('@')[0] || ''

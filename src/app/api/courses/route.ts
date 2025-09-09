@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getPrisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
   try {
     // Fetch the current user if available so we can return ownership info
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    const prisma = getPrisma()
 
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q')?.trim() || ''
@@ -52,7 +51,6 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const prisma = getPrisma()
   
   try {
     // Ensure a user profile exists for FK integrity

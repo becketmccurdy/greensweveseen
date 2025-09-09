@@ -23,26 +23,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient()
-
     let mounted = true
 
-    // Initialize session
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-    })
+    try {
+      const supabase = createClient()
 
-    // Subscribe to auth state changes
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+      // Initialize session
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (!mounted) return
+        if (error) {
+          console.error('Auth session error:', error)
+        }
+        setUser(data.session?.user ?? null)
+        setLoading(false)
+      }).catch((error) => {
+        console.error('Auth getSession failed:', error)
+        if (mounted) {
+          setLoading(false)
+        }
+      })
 
-    return () => {
-      mounted = false
-      sub.subscription.unsubscribe()
+      // Subscribe to auth state changes
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      })
+
+      return () => {
+        mounted = false
+        sub.subscription.unsubscribe()
+      }
+    } catch (error) {
+      console.error('Auth context initialization error:', error)
+      if (mounted) {
+        setLoading(false)
+      }
+      // Return empty cleanup function in error case
+      return () => {}
     }
   }, [])
 
