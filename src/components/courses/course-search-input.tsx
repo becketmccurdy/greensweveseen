@@ -1,0 +1,250 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { MapPin, Plus, Clock } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface Course {
+  id: string
+  name: string
+  location: string | null
+  par: number
+  timesPlayed?: number
+}
+
+interface CourseSearchInputProps {
+  onCourseSelect: (course: Course) => void
+  placeholder?: string
+  showAddNew?: boolean
+}
+
+export function CourseSearchInput({ 
+  onCourseSelect, 
+  placeholder = "Search for a golf course...",
+  showAddNew = true 
+}: CourseSearchInputProps) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<Course[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
+
+  // Search courses as user types
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([])
+      setShowResults(false)
+      return
+    }
+
+    const searchCourses = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch(`/api/courses/search?q=${encodeURIComponent(query)}`)
+        if (response.ok) {
+          const data = await response.json()
+          setResults(data.courses || [])
+          setShowResults(true)
+        }
+      } catch (error) {
+        console.error('Course search error:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const debounceTimer = setTimeout(searchCourses, 300)
+    return () => clearTimeout(debounceTimer)
+  }, [query])
+
+  // Handle clicking outside to close results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        resultsRef.current && 
+        !resultsRef.current.contains(event.target as Node) &&
+        !inputRef.current?.contains(event.target as Node)
+      ) {
+        setShowResults(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleCourseSelect = (course: Course) => {
+    setQuery(course.name)
+    setShowResults(false)
+    onCourseSelect(course)
+  }
+
+  const handleAddNewCourse = () => {
+    setShowAddForm(true)
+    setShowResults(false)
+  }
+
+  const handleCreateCourse = async (courseData: { name: string; location: string; par: number }) => {
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(courseData)
+      })
+
+      if (response.ok) {
+        const newCourse = await response.json()
+        handleCourseSelect(newCourse)
+        setShowAddForm(false)
+        toast.success('Course added successfully!')
+      } else {
+        toast.error('Failed to add course')
+      }
+    } catch (error) {
+      toast.error('Failed to add course')
+    }
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        ref={inputRef}
+        type="text"
+        placeholder={placeholder}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => query.length >= 2 && setShowResults(true)}
+        className="w-full"
+      />
+
+      {showResults && (
+        <Card ref={resultsRef} className="absolute top-full left-0 right-0 z-50 mt-1 max-h-80 overflow-y-auto">
+          <CardContent className="p-2">
+            {loading ? (
+              <div className="p-4 text-center text-gray-500">Searching...</div>
+            ) : results.length > 0 ? (
+              <div className="space-y-1">
+                {results.map((course) => (
+                  <button
+                    key={course.id}
+                    onClick={() => handleCourseSelect(course)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-900">{course.name}</div>
+                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {course.location || 'Location not specified'}
+                          <span className="mx-2">•</span>
+                          Par {course.par}
+                        </div>
+                      </div>
+                      {course.timesPlayed && course.timesPlayed > 0 && (
+                        <div className="flex items-center text-sm text-green-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {course.timesPlayed} time{course.timesPlayed !== 1 ? 's' : ''}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center">
+                <div className="text-gray-500 mb-3">No courses found for "{query}"</div>
+                {showAddNew && (
+                  <Button
+                    onClick={handleAddNewCourse}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add "{query}" as new course
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {showAddForm && (
+        <AddCourseForm
+          initialName={query}
+          onSubmit={handleCreateCourse}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+interface AddCourseFormProps {
+  initialName: string
+  onSubmit: (data: { name: string; location: string; par: number }) => void
+  onCancel: () => void
+}
+
+function AddCourseForm({ initialName, onSubmit, onCancel }: AddCourseFormProps) {
+  const [name, setName] = useState(initialName)
+  const [location, setLocation] = useState('')
+  const [par, setPar] = useState(72)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit({ name: name.trim(), location: location.trim(), par })
+  }
+
+  return (
+    <Card className="absolute top-full left-0 right-0 z-50 mt-1">
+      <CardContent className="p-4">
+        <h3 className="font-semibold mb-3">Add New Course</h3>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">Course Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Location</label>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="City, State"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Par</label>
+            <Input
+              type="number"
+              value={par}
+              onChange={(e) => setPar(parseInt(e.target.value) || 72)}
+              min="54"
+              max="90"
+              required
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" className="flex-1">
+              Add Course
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}

@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Loader2 } from 'lucide-react'
-import * as toast from '@/lib/ui/toast'
+import { toast } from 'sonner'
 import MapCoursePicker, { type MapCourse } from '@/components/courses/map-course-picker'
+import { CourseSearchInput } from '@/components/courses/course-search-input'
 
 interface Course {
   id: string
@@ -286,103 +287,46 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
           {/* Course Selection */}
           <div className="space-y-2">
             <Label htmlFor="course">Course</Label>
-            {!showNewCourse ? (
-              <div className="flex gap-2">
-                <Select
-                  value={selectedCourse?.id || ''}
-                  onValueChange={(value) => {
-                    const course = courses.find(c => c.id === value)
-                    setSelectedCourse(course || null)
-                    if (errors.course) {
-                      setErrors(prev => ({ ...prev, course: '' }))
-                    }
-                  }}
-                >
-                  <SelectTrigger className={`flex-1 ${errors.course ? 'border-red-500' : ''}`}>
-                    <SelectValue placeholder="Select a course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.name} {course.location && `(${course.location})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  aria-label="Add Course"
-                  onClick={() => setShowNewCourse(true)}
-                  disabled={loading}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowMapPicker((v) => !v)}
-                  disabled={loading}
-                >
-                  {showMapPicker ? 'Hide Map' : 'Pick from Map'}
-                </Button>
-              </div>
-
-            ) : (
-              <div className="space-y-3 p-4 border border-gray-200 rounded-lg">
+            <CourseSearchInput
+              onCourseSelect={(course) => {
+                setSelectedCourse(course)
+                if (errors.course) {
+                  setErrors(prev => ({ ...prev, course: '' }))
+                }
+              }}
+              placeholder="Search for a golf course..."
+            />
+            {selectedCourse && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Add New Course</h4>
+                  <div>
+                    <div className="font-medium text-green-900">{selectedCourse.name}</div>
+                    <div className="text-sm text-green-700">
+                      {selectedCourse.location} • Par {selectedCourse.par}
+                    </div>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowNewCourse(false)}
+                    onClick={() => setSelectedCourse(null)}
                   >
-                    Cancel
+                    Change
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="courseName">Course Name</Label>
-                    <Input
-                      id="courseName"
-                      value={newCourseName}
-                      onChange={(e) => setNewCourseName(e.target.value)}
-                      placeholder="e.g. Pebble Beach"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="courseLocation">Location</Label>
-                    <Input
-                      id="courseLocation"
-                      value={newCourseLocation}
-                      onChange={(e) => setNewCourseLocation(e.target.value)}
-                      placeholder="e.g. Monterey, CA"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="coursePar">Par</Label>
-                    <Input
-                      id="coursePar"
-                      type="number"
-                      value={newCoursePar}
-                      onChange={(e) => setNewCoursePar(e.target.value)}
-                      min="60"
-                      max="80"
-                    />
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  onClick={handleCreateCourse}
-                  disabled={!newCourseName || loading}
-                  className="w-full"
-                >
-                  Create Course
-                </Button>
               </div>
             )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMapPicker((v) => !v)}
+                disabled={loading}
+                size="sm"
+              >
+                {showMapPicker ? 'Hide Map' : 'Pick from Map'}
+              </Button>
+            </div>
             {errors.course && (
               <p className="text-sm text-red-600">{errors.course}</p>
             )}

@@ -14,7 +14,9 @@ import {
   Settings, 
   Menu, 
   X,
-  LogOut 
+  LogOut,
+  MapPin,
+  Map
 } from 'lucide-react'
 
 interface NavigationProps {
@@ -28,6 +30,8 @@ interface NavigationProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'New Round', href: '/rounds/new', icon: Plus },
+  { name: 'My Courses', href: '/my-courses', icon: MapPin },
+  { name: 'Course Directory', href: '/courses', icon: Map },
   { name: 'Statistics', href: '/stats', icon: BarChart3 },
   { name: 'Friends', href: '/friends', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
