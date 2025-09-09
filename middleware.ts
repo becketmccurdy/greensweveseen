@@ -22,6 +22,7 @@ export async function middleware(request: NextRequest) {
     '/debug',
   ]
 
+  // Always allow public assets without authentication
   if (
     path.startsWith('/_next/') ||
     path.startsWith('/api/') ||
@@ -33,7 +34,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  return updateSession(request)
+  // Only run auth middleware for protected routes
+  try {
+    return await updateSession(request)
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // If auth fails, redirect to login for protected routes
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
 }
 
 export const config = {
