@@ -22,13 +22,9 @@ test.describe('GreensWeveSeen App', () => {
     }
   })
 
-  test('should show dashboard for authenticated users', async ({ page }) => {
-    // This test would require setting up authentication
-    // For now, we'll just check that the dashboard route exists
-    await page.goto('/dashboard')
-    
-    // Should redirect to login if not authenticated
-    await expect(page).toHaveURL(/.*login/)
+  test('should protect API routes when unauthenticated', async ({ request }) => {
+    const res = await request.get('/api/rounds')
+    expect(res.status()).toBe(401)
   })
 
   test('should be responsive on mobile', async ({ page }) => {

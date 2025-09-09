@@ -12,8 +12,8 @@ datasource db {
 
 model UserProfile {
   id        String   @id @default(cuid())
-  userId    String   // Supabase auth user ID
-  email     String
+  userId    String   @unique // Supabase auth user ID
+  email     String   @unique
   firstName String?
   lastName  String?
   bio       String?
@@ -30,6 +30,7 @@ model UserProfile {
   friendOf       Friendship[]     @relation("FriendOf")
   activities     FriendActivity[]
   invitesSent    FriendInvite[]   @relation("InvitesSent")
+  roundsAsFriend RoundFriend[]    @relation("RoundFriends")
 
   @@map("user_profiles")
 }
@@ -43,6 +44,8 @@ model Course {
   rating      Float?
   slope       Int?
   description String?
+  latitude    Float?
+  longitude   Float?
   createdById String   // User who created this course
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -51,6 +54,7 @@ model Course {
   createdBy UserProfile @relation("CreatedCourses", fields: [createdById], references: [userId], onDelete: Cascade)
   rounds    Round[]
 
+  @@index([createdById])
   @@map("courses")
 }
 
@@ -63,6 +67,7 @@ model Round {
   totalPar   Int      @default(72)
   weather    String?
   notes      String?
+  withFriends Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -70,7 +75,9 @@ model Round {
   user   UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
   course Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
   scores Score[]
+  participants RoundFriend[]
 
+  @@index([userId, date(sort: Desc)])
   @@map("rounds")
 }
 
@@ -91,7 +98,24 @@ model Score {
   user  UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@unique([roundId, hole])
+  @@index([roundId])
+  @@index([userId])
   @@map("scores")
+}
+
+// Join table to associate additional participants to a round
+model RoundFriend {
+  id            String   @id @default(cuid())
+  roundId       String
+  friendUserId  String
+  createdAt     DateTime @default(now())
+
+  // Relations
+  round  Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  friend UserProfile @relation("RoundFriends", fields: [friendUserId], references: [userId], onDelete: Cascade)
+
+  @@unique([roundId, friendUserId])
+  @@map("round_friends")
 }
 
 model Friendship {
@@ -107,6 +131,8 @@ model Friendship {
   friend UserProfile @relation("FriendOf", fields: [friendId], references: [userId], onDelete: Cascade)
 
   @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
   @@map("friendships")
 }
 
@@ -120,6 +146,7 @@ model FriendActivity {
   // Relations
   user UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
+  @@index([userId, createdAt(sort: Desc)])
   @@map("friend_activities")
 }
 

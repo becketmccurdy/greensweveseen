@@ -5,6 +5,18 @@ ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friend_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE friend_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE round_friends ENABLE ROW LEVEL SECURITY;
+
+-- Enforce RLS at the table level
+ALTER TABLE user_profiles FORCE ROW LEVEL SECURITY;
+ALTER TABLE courses FORCE ROW LEVEL SECURITY;
+ALTER TABLE rounds FORCE ROW LEVEL SECURITY;
+ALTER TABLE scores FORCE ROW LEVEL SECURITY;
+ALTER TABLE friendships FORCE ROW LEVEL SECURITY;
+ALTER TABLE friend_activities FORCE ROW LEVEL SECURITY;
+ALTER TABLE friend_invites FORCE ROW LEVEL SECURITY;
+ALTER TABLE round_friends FORCE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist (to avoid conflicts)
 DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
@@ -28,6 +40,12 @@ DROP POLICY IF EXISTS "Users can update own friendships" ON friendships;
 DROP POLICY IF EXISTS "Users can delete own friendships" ON friendships;
 DROP POLICY IF EXISTS "Users can view friend activities" ON friend_activities;
 DROP POLICY IF EXISTS "Users can insert own activities" ON friend_activities;
+DROP POLICY IF EXISTS "Inviter can view own invites" ON friend_invites;
+DROP POLICY IF EXISTS "Inviter can create invites" ON friend_invites;
+DROP POLICY IF EXISTS "Inviter can update own invites" ON friend_invites;
+DROP POLICY IF EXISTS "Select own or friend's round_friends" ON round_friends;
+DROP POLICY IF EXISTS "Owner can insert round_friends" ON round_friends;
+DROP POLICY IF EXISTS "Owner can delete round_friends" ON round_friends;
 
 -- Create all policies fresh
 CREATE POLICY "Users can view own profile" ON user_profiles
@@ -43,7 +61,7 @@ CREATE POLICY "Anyone can view courses" ON courses
   FOR SELECT USING (true);
 
 CREATE POLICY "Authenticated users can create courses" ON courses
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+  FOR INSERT WITH CHECK (auth.uid()::text = "createdById");
 
 CREATE POLICY "Users can update own courses" ON courses
   FOR UPDATE USING (auth.uid()::text = "createdById");
@@ -77,15 +95,16 @@ CREATE POLICY "Users can delete own scores" ON scores
 
 CREATE POLICY "Users can view own friendships" ON friendships
   FOR SELECT USING (
-    (auth.uid()::text = "userId" OR auth.uid()::text = "friendId")
-    AND status = 'ACCEPTED'
+    auth.uid()::text = "userId" OR auth.uid()::text = "friendId"
   );
 
 CREATE POLICY "Users can create friendships" ON friendships
   FOR INSERT WITH CHECK (auth.uid()::text = "userId");
 
 CREATE POLICY "Users can update own friendships" ON friendships
-  FOR UPDATE USING (auth.uid()::text = "userId");
+  FOR UPDATE USING (
+    auth.uid()::text = "userId" OR auth.uid()::text = "friendId"
+  );
 
 CREATE POLICY "Users can delete own friendships" ON friendships
   FOR DELETE USING (auth.uid()::text = "userId");
@@ -106,3 +125,42 @@ CREATE POLICY "Users can view friend activities" ON friend_activities
 
 CREATE POLICY "Users can insert own activities" ON friend_activities
   FOR INSERT WITH CHECK (auth.uid()::text = "userId");
+
+-- Friend Invites: Only inviter can view/insert/update
+CREATE POLICY "Inviter can view own invites" ON friend_invites
+  FOR SELECT USING (auth.uid()::text = "inviterId");
+
+CREATE POLICY "Inviter can create invites" ON friend_invites
+  FOR INSERT WITH CHECK (auth.uid()::text = "inviterId");
+
+CREATE POLICY "Inviter can update own invites" ON friend_invites
+  FOR UPDATE USING (auth.uid()::text = "inviterId");
+
+-- Round Friends policies
+CREATE POLICY "Select own or friend's round_friends" ON round_friends
+  FOR SELECT USING (
+    -- Owner of round can view
+    EXISTS (
+      SELECT 1 FROM rounds r
+      WHERE r.id = round_friends."roundId" AND r."userId" = auth.uid()::text
+    )
+    OR
+    -- Friend participant can view
+    round_friends."friendUserId" = auth.uid()::text
+  );
+
+CREATE POLICY "Owner can insert round_friends" ON round_friends
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM rounds r
+      WHERE r.id = round_friends."roundId" AND r."userId" = auth.uid()::text
+    )
+  );
+
+CREATE POLICY "Owner can delete round_friends" ON round_friends
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM rounds r
+      WHERE r.id = round_friends."roundId" AND r."userId" = auth.uid()::text
+    )
+  );

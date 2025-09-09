@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import { RegisterSW } from './register-sw'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/contexts/auth-context'

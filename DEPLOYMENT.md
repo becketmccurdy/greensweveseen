@@ -43,10 +43,10 @@ export GOOGLE_CLOUD_REGION="us-central1"
 # Run the deployment script
 ./deploy.sh
 
-# Set up environment variables
+# Set up environment variables (do NOT commit real values)
 ./setup-env.sh
-NEXT_PUBLIC_SUPABASE_URL=https://aqagrxavkpskjdtpwnjy.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYWdyeGF2a3Bza2pkdHB3bmp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NDU2ODQsImV4cCI6MjA3MjUyMTY4NH0.lq-zcC08FUQw3Op7vtjOSxWGEJDtyanbIfwycXZIBRw
-DATABASE_URL=postgresql://postgres:i76MSgHWTmr7vsWx@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_anon_key>
+DATABASE_URL=postgresql://postgres:<password>@db.<your-project>.supabase.co:5432/postgres
 NEXT_PUBLIC_APP_URL=https://greensweveseen.com
 ```

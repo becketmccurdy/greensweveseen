@@ -23,6 +23,7 @@ export async function GET() {
         user: {
           select: {
             id: true,
+            userId: true,
             firstName: true,
             lastName: true,
             email: true,
@@ -32,6 +33,7 @@ export async function GET() {
         friend: {
           select: {
             id: true,
+            userId: true,
             firstName: true,
             lastName: true,
             email: true,

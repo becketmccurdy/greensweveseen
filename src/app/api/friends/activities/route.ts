@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 export async function GET() {
   const supabase = await createClient()
@@ -11,6 +11,7 @@ export async function GET() {
   }
 
   try {
+    const prisma = getPrisma()
     // Get activities from friends
     const activities = await prisma.friendActivity.findMany({
       where: {
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
   const { type, data } = body
 
   try {
+    const prisma = getPrisma()
     const activity = await prisma.friendActivity.create({
       data: {
         userId: user.id,

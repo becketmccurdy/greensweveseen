@@ -10,10 +10,18 @@ interface Round {
   date: Date
   totalScore: number
   totalPar: number
+  withFriends: boolean
   course: {
     name: string
     location: string | null
   }
+  participants?: {
+    friend: {
+      firstName: string | null
+      lastName: string | null
+      email: string
+    }
+  }[]
 }
 
 interface KPIData {
@@ -21,6 +29,7 @@ interface KPIData {
   bestScore: number | null
   averageScore: number | null
   handicap: number | null
+  friendsRoundsCount: number
 }
 
 interface DashboardClientProps {
@@ -45,6 +54,7 @@ export function DashboardClient({ initialRounds, initialKPIData }: DashboardClie
     bestScore: null,
     averageScore: null,
     handicap: null,
+    friendsRoundsCount: 0,
   }
 
   if (currentRounds.length > 0) {
@@ -52,11 +62,14 @@ export function DashboardClient({ initialRounds, initialKPIData }: DashboardClie
     const bestScore = Math.min(...scores)
     const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
 
+    const friendsRoundsCount = currentRounds.filter(r => r.withFriends).length
+
     kpiData = {
       totalRounds: currentRounds.length,
       bestScore,
       averageScore,
       handicap: averageScore, // Simplified handicap for now
+      friendsRoundsCount,
     }
   }
 

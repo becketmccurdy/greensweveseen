@@ -1,16 +1,18 @@
 import { DashboardClient } from '@/components/dashboard/dashboard-client'
 import { getUserProfile } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 interface KPIData {
   totalRounds: number
   bestScore: number | null
   averageScore: number | null
   handicap: number | null
+  friendsRoundsCount: number
 }
 
 async function getDashboardData(userId: string) {
-  const rounds = await prisma.round.findMany({
+  const prisma = getPrisma()
+  const prismaRounds = await prisma.round.findMany({
     where: { userId },
     include: {
       course: {
@@ -20,23 +22,38 @@ async function getDashboardData(userId: string) {
     orderBy: { date: 'desc' }
   })
 
+  // Map to match our Round interface
+  const rounds = prismaRounds.map((round) => ({
+    id: round.id,
+    date: round.date,
+    totalScore: round.totalScore,
+    totalPar: round.totalPar,
+    withFriends: round.withFriends,
+    course: round.course,
+    weather: round.weather,
+    notes: round.notes,
+  }))
+
   let kpiData: KPIData = {
     totalRounds: 0,
     bestScore: null,
     averageScore: null,
     handicap: null,
+    friendsRoundsCount: 0,
   }
 
   if (rounds.length > 0) {
-    const scores = rounds.map((r: any) => r.totalScore)
+    const scores = rounds.map(r => r.totalScore)
     const bestScore = Math.min(...scores)
-    const averageScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+    const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    const friendsRoundsCount = rounds.filter(r => r.withFriends).length
 
     kpiData = {
       totalRounds: rounds.length,
       bestScore,
       averageScore,
       handicap: averageScore, // Simplified handicap for now
+      friendsRoundsCount,
     }
   }
 

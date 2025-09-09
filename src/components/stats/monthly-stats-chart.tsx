@@ -35,6 +35,11 @@ export function MonthlyStatsChart({ data }: MonthlyStatsChartProps) {
     monthLabel: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
   }))
 
+  // Derived stats (safe: data.length > 0 due to early return)
+  const totalRounds = data.reduce((sum, item) => sum + item.rounds, 0)
+  const bestMonthAvg = Math.min(...data.map(item => item.averageScore))
+  const mostActive = data.reduce((max, item) => (item.rounds > max.rounds ? item : max))
+
   return (
     <Card>
       <CardHeader>
@@ -87,18 +92,18 @@ export function MonthlyStatsChart({ data }: MonthlyStatsChartProps) {
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="text-center">
             <div className="font-medium text-blue-600">Total Rounds</div>
-            <div className="text-2xl font-bold">{data.reduce((sum, item) => sum + item.rounds, 0)}</div>
+            <div className="text-2xl font-bold">{totalRounds}</div>
           </div>
           <div className="text-center">
             <div className="font-medium text-red-600">Best Month Avg</div>
             <div className="text-2xl font-bold">
-              {Math.min(...data.map(item => item.averageScore))}
+              {bestMonthAvg}
             </div>
           </div>
           <div className="text-center">
             <div className="font-medium text-gray-600">Most Active Month</div>
             <div className="text-2xl font-bold">
-              {data.reduce((max, item) => item.rounds > max.rounds ? item : max, data[0]).rounds}
+              {mostActive.rounds}
             </div>
           </div>
         </div>

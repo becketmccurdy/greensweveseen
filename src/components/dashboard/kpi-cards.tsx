@@ -1,14 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { TrendingUp, Target, BarChart3, Trophy } from 'lucide-react'
+import { TrendingUp, Target, BarChart3, Trophy, Users } from 'lucide-react'
 
 interface KPICardsProps {
   totalRounds: number
   bestScore: number | null
   averageScore: number | null
   handicap: number | null
+  friendsRoundsCount: number
 }
 
-export function KPICards({ totalRounds, bestScore, averageScore, handicap }: KPICardsProps) {
+export function KPICards({ totalRounds, bestScore, averageScore, handicap, friendsRoundsCount }: KPICardsProps) {
   const kpis = [
     {
       title: 'Total Rounds',

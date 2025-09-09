@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 export async function GET(_request: NextRequest, context: any) {
   const raw = context?.params && typeof context.params.then === 'function' ? await context.params : context?.params
   const { token } = (raw || {}) as { token: string }
   try {
+    const prisma = getPrisma()
     const invite = await prisma.friendInvite.findUnique({ where: { token } })
     if (!invite) return NextResponse.json({ error: 'Invalid invite' }, { status: 404 })
     return NextResponse.json({ status: invite.status, email: invite.email, phone: invite.phone })
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest, context: any) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
+    const prisma = getPrisma()
     const invite = await prisma.friendInvite.findUnique({ where: { token } })
     if (!invite) return NextResponse.json({ error: 'Invalid invite' }, { status: 404 })
     if (invite.status !== 'PENDING') return NextResponse.json({ error: 'Invite already used or expired' }, { status: 400 })

@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, TrendingUp, Target, Trophy, MapPin } from 'lucide-react'
+import { MonthlyStatsChart } from './monthly-stats-chart'
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts'
 
 interface StatsData {
   totalRounds: number
@@ -137,7 +139,8 @@ export function StatsClient({ profile }: StatsClientProps) {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards */
+      }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -197,23 +200,49 @@ export function StatsClient({ profile }: StatsClientProps) {
         </Card>
       </div>
 
-      {/* Placeholder for charts - simplified for deployment */}
+      {/* Monthly stats chart */}
+      <MonthlyStatsChart data={stats.monthlyStats} />
+
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Score Trend */}
         <Card>
           <CardHeader>
             <CardTitle>Score Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-500">Chart coming soon...</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.scoreTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="score" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Score" />
+                  <Line type="monotone" dataKey="par" stroke="#94a3b8" strokeWidth={1.5} dot={false} name="Par" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
-        
+
+        {/* Score Distribution */}
         <Card>
           <CardHeader>
             <CardTitle>Score Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-500">Chart coming soon...</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.scoreDistribution}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="range" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#3b82f6" radius={[4,4,0,0]} name="Rounds" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

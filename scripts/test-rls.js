@@ -67,9 +67,17 @@ async function testUserAccess(user1, user2) {
   }
   
   // Create test data
+  // Ensure a course exists owned by user1 (RLS requires createdById = auth.uid())
+  const courseId = `test-course-${Date.now()}`
+  await user1
+    .from('courses')
+    .insert({ id: courseId, name: 'Test Course', location: 'Testville', par: 72, createdById: user1Data.id })
+
+  // Create a round for user1 on that course
+  const roundId = `test-round-${Date.now()}`
   const { data: round1 } = await user1
     .from('rounds')
-    .insert({ userId: user1Data.id, courseId: 1, totalScore: 85 })
+    .insert({ id: roundId, userId: user1Data.id, courseId: courseId, totalScore: 85, totalPar: 72, date: new Date().toISOString() })
     .select()
     .single()
   
@@ -95,14 +103,20 @@ async function testFriendshipAccess(user1, user2) {
   console.log('\nTesting friendship access...')
   
   // Create friendship
+  const { data: u1 } = await user1.auth.getUser()
+  const { data: u2 } = await user2.auth.getUser()
+  const user1Id = u1?.user?.id
+  const user2Id = u2?.user?.id
+  const friendshipId = `test-fs-${Date.now()}`
   await user1
     .from('friendships')
-    .insert({ userId: user1.auth.user().id, friendId: user2.auth.user().id, status: 'ACCEPTED' })
+    .insert({ id: friendshipId, userId: user1Id, friendId: user2Id, status: 'ACCEPTED' })
   
   // Create activity
+  const activityId = `test-act-${Date.now()}`
   await user2
     .from('friend_activities')
-    .insert({ userId: user2.auth.user().id, type: 'ROUND_COMPLETED' })
+    .insert({ id: activityId, userId: user2Id, type: 'ROUND_COMPLETED', data: {} })
   
   // Test access
   const { data: activities } = await user1

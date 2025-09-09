@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRoundsStore } from '@/lib/stores/rounds-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import MapCoursePicker, { type MapCourse } from '@/components/courses/map-course-picker'
 
 interface Course {
   id: string
@@ -26,11 +27,14 @@ interface NewRoundFormProps {
 export function NewRoundForm({ courses }: NewRoundFormProps) {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [totalScore, setTotalScore] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10)
+  )
   const [weather, setWeather] = useState('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [showNewCourse, setShowNewCourse] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(false)
   const [newCourseName, setNewCourseName] = useState('')
   const [newCourseLocation, setNewCourseLocation] = useState('')
   const [newCoursePar, setNewCoursePar] = useState('72')
@@ -49,6 +53,31 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
   )
   
   const router = useRouter()
+
+  // Friends selection state
+  const [withFriends, setWithFriends] = useState(false)
+  const [friends, setFriends] = useState<Array<{ userId: string; name: string }>>([])
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
+
+  useEffect(() => {
+    // Load accepted friends for selection
+    const loadFriends = async () => {
+      try {
+        const r = await fetch('/api/friends')
+        if (!r.ok) return
+        const data = await r.json()
+        const accepted = (data || []).filter((f: any) => f.isAccepted)
+        const shaped = accepted.map((f: any) => ({
+          userId: f.friend.userId as string,
+          name: [f.friend.firstName, f.friend.lastName].filter(Boolean).join(' ') || f.friend.email,
+        }))
+        setFriends(shaped)
+      } catch (e) {
+        console.error('Failed to load friends', e)
+      }
+    }
+    loadFriends()
+  }, [])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -127,6 +156,7 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
       date: new Date(date),
       totalScore: computedTotalScore,
       totalPar: computedTotalPar,
+      withFriends,
       course: {
         name: selectedCourse!.name,
         location: selectedCourse!.location,
@@ -146,6 +176,8 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
           date: new Date(date).toISOString(),
           weather: weather || null,
           notes: notes || null,
+          withFriends,
+          friendUserIds: withFriends ? selectedFriendIds : [],
         }),
       })
 
@@ -280,10 +312,19 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
                 <Button
                   type="button"
                   variant="outline"
+                  aria-label="Add Course"
                   onClick={() => setShowNewCourse(true)}
                   disabled={loading}
                 >
                   <Plus className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowMapPicker((v) => !v)}
+                  disabled={loading}
+                >
+                  {showMapPicker ? 'Hide Map' : 'Pick from Map'}
                 </Button>
               </div>
 
@@ -345,6 +386,21 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
             {errors.course && (
               <p className="text-sm text-red-600">{errors.course}</p>
             )}
+            {showMapPicker && (
+              <div className="p-3 border rounded-lg">
+                <MapCoursePicker
+                  onSelect={(c: MapCourse) => {
+                    if (c.id) {
+                      setSelectedCourse({ id: c.id, name: c.name, location: c.location ?? null, par: c.par ?? 72 })
+                      setShowMapPicker(false)
+                      if (errors.course) setErrors(prev => ({ ...prev, course: '' }))
+                    }
+                  }}
+                  onClose={() => setShowMapPicker(false)}
+                  height={300}
+                />
+              </div>
+            )}
           </div>
 
           {/* Score and Date */}
@@ -401,6 +457,47 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
               onChange={(e) => setWeather(e.target.value)}
               placeholder="e.g. Sunny, 75°F, light wind"
             />
+          </div>
+
+          {/* Friends */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Played with friends?</Label>
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={withFriends}
+                onChange={(e) => setWithFriends(e.target.checked)}
+              />
+            </div>
+            {withFriends && (
+              <div className="p-3 border rounded-lg space-y-2">
+                {friends.length === 0 ? (
+                  <p className="text-sm text-gray-500">No accepted friends yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {friends.map((f) => {
+                      const checked = selectedFriendIds.includes(f.userId)
+                      return (
+                        <label key={f.userId} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4"
+                            checked={checked}
+                            onChange={(e) => {
+                              setSelectedFriendIds((prev) =>
+                                e.target.checked ? [...prev, f.userId] : prev.filter((id) => id !== f.userId)
+                              )
+                            }}
+                          />
+                          <span>{f.name}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Notes */}

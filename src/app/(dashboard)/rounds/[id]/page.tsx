@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ export default async function RoundDetailsPage(props: any) {
     redirect('/login')
   }
 
+  const prisma = getPrisma()
   const round = await prisma.round.findFirst({
     where: { id: params.id, userId: user!.id },
     include: {

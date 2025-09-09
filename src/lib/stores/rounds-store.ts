@@ -5,12 +5,20 @@ interface Round {
   date: Date
   totalScore: number
   totalPar: number
+  withFriends: boolean
   course: {
     name: string
     location: string | null
   }
   weather?: string | null
   notes?: string | null
+  participants?: {
+    friend: {
+      firstName: string | null
+      lastName: string | null
+      email: string
+    }
+  }[] | undefined
 }
 
 interface RoundsState {
@@ -40,9 +48,11 @@ export const useRoundsStore = create<RoundsState>((set, get) => ({
       date: round.date,
       totalScore: round.totalScore,
       totalPar: round.totalPar,
+      withFriends: round.withFriends,
       course: round.course,
-      weather: round.weather,
-      notes: round.notes,
+      weather: round.weather ?? null,
+      notes: round.notes ?? null,
+      participants: round.participants ?? undefined,
     }
     
     set((state) => ({

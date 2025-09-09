@@ -1,32 +1,33 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
+import { vi } from 'vitest'
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => '/',
 }))
 
-// Mock Supabase client
-jest.mock('@/lib/supabase/client', () => ({
-  supabase: {
+// Mock Supabase browser client factory
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => ({
     auth: {
-      getUser: jest.fn(),
-      signOut: jest.fn(),
+      getUser: vi.fn(),
+      signOut: vi.fn(),
     },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
     })),
-  },
+  }),
 }))
