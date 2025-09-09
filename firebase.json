@@ -23,6 +23,13 @@
     ],
     "rewrites": [
       {
+        "source": "/_next/static/**",
+        "run": {
+          "serviceId": "greensweveseen",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "**",
         "run": {
           "serviceId": "greensweveseen",
