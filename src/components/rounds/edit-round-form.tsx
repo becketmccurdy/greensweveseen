@@ -63,7 +63,7 @@ export function EditRoundForm({ round, courses }: EditRoundFormProps) {
       },
       body: JSON.stringify({
         courseId,
-        date: new Date(date).toISOString(),
+        date,
         score: parseInt(score),
         notes: notes.trim() || null,
       }),

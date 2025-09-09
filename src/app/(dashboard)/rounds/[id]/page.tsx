@@ -3,8 +3,9 @@ import { getPrisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { DeleteRoundButton } from '@/components/rounds/delete-round-button'
 import Link from 'next/link'
-import { Calendar, MapPin, ArrowLeft } from 'lucide-react'
+import { Calendar, MapPin, ArrowLeft, Edit } from 'lucide-react'
 import { format } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
@@ -51,7 +52,18 @@ export default async function RoundDetailsPage(props: any) {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>{round.course.name}</span>
-            <span className="text-sm text-gray-500">Par {round.totalPar}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Par {round.totalPar}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/rounds/${round.id}/edit`}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Link>
+                </Button>
+                <DeleteRoundButton roundId={round.id} courseName={round.course.name} />
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
