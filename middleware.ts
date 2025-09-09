@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     '/privacy',
     '/terms',
     '/debug',
+    '/health',
   ]
 
   // Always allow public assets without authentication
