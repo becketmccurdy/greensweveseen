@@ -19,17 +19,25 @@ The code has been pushed to: https://github.com/becketmccurdy/greensweveseen1
 
 ## 📋 Environment Setup
 
-Your `.env.production` file should contain:
+Your production environment should contain:
 
 ```bash
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://aqagrxavkpskjdtpwnjy.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-DATABASE_URL=postgresql://postgres:[password]@db.your-project.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:[password]@db.aqagrxavkpskjdtpwnjy.supabase.co:5432/postgres
 
-# Production URL (will be updated after first deployment)
-NEXT_PUBLIC_APP_URL=https://your-app-url.run.app
+# Production URL (Firebase Hosting with Cloud Run backend)
+NEXT_PUBLIC_APP_URL=https://greensweveseen.web.app
 ```
+
+## ✅ DEPLOYMENT COMPLETE
+
+**Live URLs:**
+- **Primary App**: https://greensweveseen.web.app (Firebase Hosting)
+- **Backend Service**: https://greensweveseen-303526391321.us-central1.run.app (Cloud Run)
+
+The app uses Firebase Hosting with rewrites to Cloud Run for optimal performance and custom domain support.
 
 ## 🚀 Quick Deployment
 
