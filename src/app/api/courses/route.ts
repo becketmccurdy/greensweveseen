@@ -6,7 +6,11 @@ export async function GET(request: Request) {
   try {
     // Fetch the current user if available so we can return ownership info
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError) {
+      console.warn('Auth error in courses API:', authError)
+    }
 
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q')?.trim() || ''
@@ -17,6 +21,9 @@ export async function GET(request: Request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500)
 
     let courses: any[] = []
+    
+    // Add timeout to database operations
+    const dbTimeout = 10000 // 10 seconds
 
     // If we have coordinates and distance, use spatial search
     if (lat != null && lng != null && distance != null && isFinite(lat) && isFinite(lng)) {

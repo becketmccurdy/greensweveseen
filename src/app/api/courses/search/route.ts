@@ -4,47 +4,78 @@ import { prisma } from '@/lib/prisma'
 import { getGolfCourseAPIClient } from '@/lib/golf-course-api'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { searchParams } = new URL(request.url)
-  const query = searchParams.get('q')
-
-  if (!query || query.length < 2) {
-    return NextResponse.json({ courses: [] })
-  }
-
   try {
-    // Search local courses first
-    const localCourses = await prisma.course.findMany({
-      where: {
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { location: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      orderBy: [
-        { name: 'asc' }
-      ],
-      take: 10
-    })
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError) {
+      console.warn('Auth error in course search:', authError)
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    }
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    // Get user's play history for local courses
-    const localCourseIds = localCourses.map(c => c.id)
-    const userRounds = await prisma.round.groupBy({
-      by: ['courseId'],
-      where: {
-        userId: user.id,
-        courseId: { in: localCourseIds }
-      },
-      _count: {
-        id: true
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get('q')
+
+    if (!query || query.length < 2) {
+      return NextResponse.json({ courses: [] })
+    }
+
+    // Add timeout wrapper for database operations
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Database timeout')), ms)
+        )
+      ])
+    }
+
+    try {
+      // Search local courses first with timeout
+      const localCourses = await withTimeout(
+        prisma.course.findMany({
+          where: {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { location: { contains: query, mode: 'insensitive' } }
+            ]
+          },
+          orderBy: [
+            { name: 'asc' }
+          ],
+          take: 10
+        }),
+        8000 // 8 second timeout
+      )
+
+      // Get user's play history for local courses with timeout
+      const localCourseIds = localCourses.map(c => c.id)
+      let userRounds: any[] = []
+      
+      if (localCourseIds.length > 0) {
+        try {
+          userRounds = await withTimeout(
+            prisma.round.groupBy({
+              by: ['courseId'],
+              where: {
+                userId: user.id,
+                courseId: { in: localCourseIds }
+              },
+              _count: {
+                id: true
+              }
+            } as any),
+            5000 // 5 second timeout for rounds query
+          )
+        } catch (roundsError) {
+          console.warn('Failed to get user rounds history:', roundsError)
+          // Continue without play counts
+        }
       }
-    })
 
     // Create a map of course play counts
     const playCountMap = new Map(
@@ -95,9 +126,39 @@ export async function GET(request: NextRequest) {
       return a.name.localeCompare(b.name)
     })
 
-    return NextResponse.json({ courses: allCourses })
+      return NextResponse.json({ courses: allCourses })
+    } catch (localError) {
+      console.error('Local course search failed:', localError)
+      
+      // Fallback: try to get external courses only
+      try {
+        const golfAPI = getGolfCourseAPIClient()
+        if (golfAPI) {
+          const apiCourses = await golfAPI.searchCourses(query)
+          const externalCourses = apiCourses.slice(0, 10).map(course => ({
+            id: `external-${course.id}`,
+            name: course.course_name || course.club_name,
+            location: `${course.location.city}, ${course.location.state}`,
+            par: course.tees.male?.[0]?.par_total || course.tees.female?.[0]?.par_total || 72,
+            timesPlayed: 0,
+            source: 'external' as const,
+            externalId: course.id,
+            latitude: course.location.latitude,
+            longitude: course.location.longitude,
+            address: course.location.address
+          }))
+          
+          return NextResponse.json({ courses: externalCourses })
+        }
+      } catch (externalError) {
+        console.error('External course search also failed:', externalError)
+      }
+      
+      // If everything fails, return empty array instead of error
+      return NextResponse.json({ courses: [] })
+    }
   } catch (error) {
     console.error('Course search error:', error)
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+    return NextResponse.json({ courses: [] }) // Return empty array instead of 500
   }
 }
