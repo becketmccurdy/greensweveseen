@@ -153,26 +153,34 @@ export function CourseSearchInput({
   }
 
   const handleSelectExternalCourse = async (course: Course) => {
-    // If it's an external course, import it to our database first
+    // If it's an external course, create it locally instead of importing
     if (course.id.toString().startsWith('external-')) {
       try {
-        const response = await fetch('/api/courses/import', {
+        // Create the course locally with the external course data
+        const response = await fetch('/api/courses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            externalId: course.externalId,
-            source: 'golfcourseapi'
+            name: course.name,
+            location: course.location,
+            par: course.par,
+            latitude: course.latitude,
+            longitude: course.longitude
           })
         })
 
         if (response.ok) {
-          const importedCourse = await response.json()
-          handleCourseSelect(importedCourse)
+          const newCourse = await response.json()
+          console.log('External course created locally:', newCourse)
+          handleCourseSelect(newCourse)
         } else {
-          toast.error('Failed to import course')
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('Failed to create course:', response.status, errorData)
+          toast.error(errorData.error || `Failed to add course (${response.status})`)
         }
       } catch (error) {
-        toast.error('Failed to import course')
+        console.error('Course creation error:', error)
+        toast.error('Failed to add course')
       }
     } else {
       handleCourseSelect(course)

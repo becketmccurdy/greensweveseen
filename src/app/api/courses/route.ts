@@ -135,18 +135,22 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError) {
-      console.warn('Auth error in course creation:', authError)
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+      console.error('Auth error in course creation:', authError)
+      return NextResponse.json({ error: 'Authentication failed', details: authError.message }, { status: 401 })
     }
     
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('No user found in course creation request')
+      return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 })
     }
+    
+    console.log('Course creation request from user:', user.id)
 
   const body = await request.json()
   
   try {
     // Ensure a user profile exists for FK integrity
+    console.log('Ensuring user profile exists for user:', user.id)
     await prisma.userProfile.upsert({
       where: { userId: user.id },
       update: {},
@@ -155,6 +159,7 @@ export async function POST(request: Request) {
         email: user.email || '',
       }
     })
+    console.log('User profile ensured')
 
     const latitude = body.latitude !== undefined ? Number(body.latitude) : null
     const longitude = body.longitude !== undefined ? Number(body.longitude) : null
@@ -185,6 +190,15 @@ export async function POST(request: Request) {
       }
     }
 
+    console.log('Creating course with data:', {
+      name: body.name,
+      location: body.location ?? null,
+      par: typeof body.par === 'number' ? body.par : Number(body.par) || 72,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+      createdById: user.id,
+    })
+    
     const course = await prisma.course.create({
       data: {
         name: body.name,
@@ -195,6 +209,8 @@ export async function POST(request: Request) {
         createdById: user.id,
       }
     })
+    
+    console.log('Course created successfully:', course.id)
 
     // Try to set PostGIS geom if available
     if (latitude != null && longitude != null) {
@@ -213,15 +229,17 @@ export async function POST(request: Request) {
     return NextResponse.json(course)
   } catch (error) {
     console.error('Error creating course:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Failed to create course' },
+      { error: 'Failed to create course', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
   } catch (outerError) {
     console.error('Outer error in course creation:', outerError)
+    console.error('Outer error stack:', outerError instanceof Error ? outerError.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Failed to create course' },
+      { error: 'Internal server error', details: outerError instanceof Error ? outerError.message : 'Unknown error' },
       { status: 500 }
     )
   }
