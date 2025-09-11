@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Calendar, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { MapPin, Calendar, TrendingUp, TrendingDown, AlertTriangle, Grid, Map } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import MapCoursePicker, { type MapCourse } from '@/components/courses/map-course-picker'
 
 interface CourseWithStats {
   id: string
@@ -165,6 +167,7 @@ export function MyCoursesClient() {
   const [courses, setCourses] = useState<CourseWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid')
 
   const fetchMyCourses = async () => {
     setLoading(true)
@@ -204,10 +207,66 @@ export function MyCoursesClient() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {courses.map((course) => (
-        <CourseCard key={course.id} course={course} />
-      ))}
+    <div className="space-y-6">
+      {/* View Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          {courses.length} course{courses.length !== 1 ? 's' : ''} played
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid className="w-4 h-4 mr-2" />
+            List
+          </Button>
+          {process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('map')}
+            >
+              <Map className="w-4 h-4 mr-2" />
+              Map
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      {viewMode === 'map' && process.env.NEXT_PUBLIC_MAPBOX_TOKEN ? (
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <MapCoursePicker
+                onSelect={(course: MapCourse) => {
+                  // Navigate to course page or show course details
+                  if (course.id) {
+                    window.location.href = `/courses/${course.id}`
+                  }
+                }}
+                onClose={() => {}}
+                height={400}
+              />
+            </CardContent>
+          </Card>
+          
+          {/* Course List Below Map */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.map((course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <CourseCard key={course.id} course={course} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

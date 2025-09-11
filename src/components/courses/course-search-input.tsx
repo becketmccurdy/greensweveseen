@@ -161,31 +161,76 @@ export function CourseSearchInput({
               <div className="p-4 text-center text-gray-500">Searching...</div>
             ) : results.length > 0 ? (
               <div className="space-y-1">
-                {results.map((course) => (
-                  <button
-                    key={course.id}
-                    onClick={() => handleSelectExternalCourse(course)}
-                    className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-900">{course.name}</div>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {course.location || 'Location not specified'}
-                          <span className="mx-2">•</span>
-                          Par {course.par}
-                        </div>
-                      </div>
-                      {course.timesPlayed && course.timesPlayed > 0 && (
-                        <div className="flex items-center text-sm text-green-600">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {course.timesPlayed} time{course.timesPlayed !== 1 ? 's' : ''}
-                        </div>
-                      )}
+                {/* Group courses by played status */}
+                {results.filter(c => c.timesPlayed && c.timesPlayed > 0).length > 0 && (
+                  <>
+                    <div className="px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 rounded">
+                      Courses You've Played
                     </div>
-                  </button>
-                ))}
+                    {results
+                      .filter(c => c.timesPlayed && c.timesPlayed > 0)
+                      .map((course) => (
+                        <button
+                          key={course.id}
+                          onClick={() => handleSelectExternalCourse(course)}
+                          className="w-full text-left p-3 rounded-lg hover:bg-green-50 transition-colors border-l-2 border-green-500"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-900">{course.name}</div>
+                              <div className="flex items-center text-sm text-gray-500 mt-1">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                {course.location || 'Location not specified'}
+                                <span className="mx-2">•</span>
+                                Par {course.par}
+                              </div>
+                            </div>
+                            <div className="flex items-center text-sm text-green-600 font-medium">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {course.timesPlayed} time{course.timesPlayed !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                  </>
+                )}
+                
+                {/* Other courses */}
+                {results.filter(c => !c.timesPlayed || c.timesPlayed === 0).length > 0 && (
+                  <>
+                    {results.filter(c => c.timesPlayed && c.timesPlayed > 0).length > 0 && (
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-600 bg-gray-50 rounded mt-2">
+                        Other Courses
+                      </div>
+                    )}
+                    {results
+                      .filter(c => !c.timesPlayed || c.timesPlayed === 0)
+                      .map((course) => (
+                        <button
+                          key={course.id}
+                          onClick={() => handleSelectExternalCourse(course)}
+                          className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-900">{course.name}</div>
+                              <div className="flex items-center text-sm text-gray-500 mt-1">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                {course.location || 'Location not specified'}
+                                <span className="mx-2">•</span>
+                                Par {course.par}
+                              </div>
+                            </div>
+                            {course.source === 'external' && (
+                              <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                New
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                  </>
+                )}
               </div>
             ) : (
               <div className="p-4 text-center">

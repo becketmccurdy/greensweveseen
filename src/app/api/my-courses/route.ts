@@ -78,7 +78,8 @@ async function getMyCoursesData(userId: string): Promise<CourseWithStats[]> {
     })
   } catch (error) {
     console.error('Error fetching my courses data:', error)
-    throw error
+    // Return empty array instead of throwing to prevent 500 errors
+    return []
   }
 }
 
