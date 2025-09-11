@@ -22,8 +22,15 @@ export async function GET(request: Request) {
 
     let courses: any[] = []
     
-    // Add timeout to database operations
-    const dbTimeout = 10000 // 10 seconds
+    // Add timeout wrapper for database operations
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Database timeout')), ms)
+        )
+      ])
+    }
 
     // If we have coordinates and distance, use spatial search
     if (lat != null && lng != null && distance != null && isFinite(lat) && isFinite(lng)) {
@@ -54,7 +61,10 @@ export async function GET(request: Request) {
           LIMIT ${limit};
         `
         
-        courses = await prisma.$queryRawUnsafe(query, ...params)
+        courses = await withTimeout(
+          prisma.$queryRawUnsafe(query, ...params),
+          8000 // 8 second timeout
+        )
       } catch (e) {
         console.warn('PostGIS spatial query failed, falling back to simple filtering:', e)
         // Fallback to simple coordinate-based filtering
@@ -75,11 +85,14 @@ export async function GET(request: Request) {
           })
         }
         
-        courses = await prisma.course.findMany({
-          where,
-          orderBy: sort === 'name' ? { name: 'asc' } : { name: 'asc' },
-          take: limit,
-        })
+        courses = await withTimeout(
+          prisma.course.findMany({
+            where,
+            orderBy: sort === 'name' ? { name: 'asc' } : { name: 'asc' },
+            take: limit,
+          }),
+          8000 // 8 second timeout
+        )
       }
     } else {
       // Standard text-based search
@@ -90,11 +103,14 @@ export async function GET(request: Request) {
         ]
       } : {}
 
-      courses = await prisma.course.findMany({
-        where,
-        orderBy: sort === 'name' ? { name: 'asc' } : { name: 'asc' },
-        take: limit,
-      })
+      courses = await withTimeout(
+        prisma.course.findMany({
+          where,
+          orderBy: sort === 'name' ? { name: 'asc' } : { name: 'asc' },
+          take: limit,
+        }),
+        8000 // 8 second timeout
+      )
     }
 
     const shaped = courses.map((c: any) => ({
@@ -106,20 +122,26 @@ export async function GET(request: Request) {
     return NextResponse.json(shaped)
   } catch (error) {
     console.error('Error fetching courses:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch courses' },
-      { status: 500 }
-    )
+    
+    // Return empty array instead of 500 error to prevent client-side crashes
+    // This allows the application to continue functioning even when DB is unavailable
+    return NextResponse.json([])
   }
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError) {
+      console.warn('Auth error in course creation:', authError)
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    }
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
   const body = await request.json()
   
@@ -191,6 +213,13 @@ export async function POST(request: Request) {
     return NextResponse.json(course)
   } catch (error) {
     console.error('Error creating course:', error)
+    return NextResponse.json(
+      { error: 'Failed to create course' },
+      { status: 500 }
+    )
+  }
+  } catch (outerError) {
+    console.error('Outer error in course creation:', outerError)
     return NextResponse.json(
       { error: 'Failed to create course' },
       { status: 500 }
