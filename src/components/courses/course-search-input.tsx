@@ -41,9 +41,16 @@ export function CourseSearchInput({
 
   // Search courses as user types
   useEffect(() => {
-    if (query.length < 2) {
+    if (query.length < 1) {
       setResults([])
       setShowResults(false)
+      return
+    }
+
+    if (query.length === 1) {
+      // For single character, just show empty results so "Add new course" appears
+      setResults([])
+      setShowResults(true)
       return
     }
 
@@ -55,9 +62,22 @@ export function CourseSearchInput({
           const data = await response.json()
           setResults(data.courses || [])
           setShowResults(true)
+        } else if (response.status === 401) {
+          // User not authenticated, but still allow adding new courses
+          console.log('User not authenticated, showing add new course option')
+          setResults([])
+          setShowResults(true)
+        } else {
+          // Other errors, still show add new course option
+          console.error('Course search failed:', response.status, response.statusText)
+          setResults([])
+          setShowResults(true)
         }
       } catch (error) {
         console.error('Course search error:', error)
+        // Always show results panel so user can add new course
+        setResults([])
+        setShowResults(true)
       } finally {
         setLoading(false)
       }
@@ -92,6 +112,17 @@ export function CourseSearchInput({
   const handleAddNewCourse = () => {
     setShowAddForm(true)
     setShowResults(false)
+  }
+
+  // Show "Add new course" option when input is focused and empty
+  const handleInputFocus = () => {
+    if (query.length >= 2) {
+      setShowResults(true)
+    } else if (query.length >= 1) {
+      // Show add new course option for single character searches too
+      setShowResults(true)
+      setResults([])
+    }
   }
 
   const handleCreateCourse = async (courseData: { name: string; location: string; par: number }) => {
@@ -150,7 +181,7 @@ export function CourseSearchInput({
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => query.length >= 2 && setShowResults(true)}
+        onFocus={handleInputFocus}
         className="w-full"
       />
 
