@@ -45,19 +45,28 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError) {
+      console.error('Auth error in rounds POST:', authError)
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    }
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  const json = await request.json()
-  const parsed = RoundBodySchema.safeParse(json)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
-  }
-  const body = parsed.data
+    const json = await request.json()
+    console.log('Received round data:', JSON.stringify(json, null, 2))
+    
+    const parsed = RoundBodySchema.safeParse(json)
+    if (!parsed.success) {
+      console.error('Validation failed:', parsed.error.flatten())
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const body = parsed.data
   
   try {
     // Ensure a user profile exists for FK integrity
@@ -139,7 +148,14 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating round:', error)
     return NextResponse.json(
-      { error: 'Failed to create round' },
+      { error: 'Failed to create round', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+  } catch (outerError) {
+    console.error('Outer error in rounds POST:', outerError)
+    return NextResponse.json(
+      { error: 'Internal server error', details: outerError instanceof Error ? outerError.message : 'Unknown error' },
       { status: 500 }
     )
   }

@@ -172,7 +172,7 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
           courseId: selectedCourse!.id,
           totalScore: computedTotalScore,
           totalPar: computedTotalPar,
-          date: new Date(date).toISOString(),
+          date: date, // Send date as YYYY-MM-DD string directly
           weather: weather || null,
           notes: notes || null,
           withFriends,
@@ -224,8 +224,13 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
       } else {
         // Remove optimistic update on failure
         removeOptimisticRound(tempId)
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save round')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Round save failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        })
+        throw new Error(errorData.error || `Failed to save round (${response.status})`)
       }
     } catch (error) {
       // Remove optimistic update on error
