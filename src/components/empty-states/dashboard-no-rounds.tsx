@@ -22,7 +22,7 @@ export function DashboardNoRounds() {
             </Link>
           </Button>
           <Button variant="outline" size="lg" asChild>
-            <Link href="/courses" prefetch={true}>
+            <Link href="/my-courses" prefetch={true}>
               Explore Courses
             </Link>
           </Button>

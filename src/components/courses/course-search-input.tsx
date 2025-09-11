@@ -104,6 +104,7 @@ export function CourseSearchInput({
   }, [])
 
   const handleCourseSelect = (course: Course) => {
+    console.log('Selecting course:', course)
     setQuery(course.name)
     setShowResults(false)
     onCourseSelect(course)
@@ -127,6 +128,7 @@ export function CourseSearchInput({
 
   const handleCreateCourse = async (courseData: { name: string; location: string; par: number }) => {
     try {
+      console.log('Creating course:', courseData)
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,13 +137,17 @@ export function CourseSearchInput({
 
       if (response.ok) {
         const newCourse = await response.json()
+        console.log('Course created successfully:', newCourse)
         handleCourseSelect(newCourse)
         setShowAddForm(false)
         toast.success('Course added successfully!')
       } else {
-        toast.error('Failed to add course')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Failed to create course:', response.status, errorData)
+        toast.error(errorData.error || `Failed to add course (${response.status})`)
       }
     } catch (error) {
+      console.error('Course creation error:', error)
       toast.error('Failed to add course')
     }
   }

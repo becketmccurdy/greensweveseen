@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [useMagicLink, setUseMagicLink] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -23,13 +24,32 @@ export function LoginForm() {
     e.preventDefault()
     setLoading(true)
 
+    // Validate password confirmation for signup
+    if (isSignUp && !useMagicLink && password !== confirmPassword) {
+      toast.error('Passwords do not match')
+      setLoading(false)
+      return
+    }
+
+    // Validate password strength for signup
+    if (isSignUp && !useMagicLink && password.length < 8) {
+      toast.error('Password must be at least 8 characters long')
+      setLoading(false)
+      return
+    }
+
     try {
       const supabase = createClient()
 
       if (useMagicLink) {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}${nextPath}` }
+          options: { 
+            emailRedirectTo: `${window.location.origin}${nextPath}`,
+            data: { 
+              email_confirm: true 
+            }
+          }
         })
         if (error) {
           toast.error(error.message)
@@ -41,13 +61,18 @@ export function LoginForm() {
           const { error } = await supabase.auth.signUp({
             email,
             password,
-            options: { emailRedirectTo: `${window.location.origin}${nextPath}` }
+            options: { 
+              emailRedirectTo: `${window.location.origin}${nextPath}`,
+              data: {
+                email_confirm: true
+              }
+            }
           })
           if (error) {
             toast.error(error.message)
             return
           }
-          toast.success('Account created! Check your email to confirm.')
+          toast.success('Account created! Check your email to verify your account before signing in.')
         } else {
           const { data, error } = await supabase.auth.signInWithPassword({ email, password })
           if (error) {
@@ -100,18 +125,34 @@ export function LoginForm() {
           />
         </div>
         {!useMagicLink && (
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required={!useMagicLink}
-              minLength={6}
-            />
-          </div>
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder={isSignUp ? "Enter your password (min 8 characters)" : "Enter your password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required={!useMagicLink}
+                minLength={isSignUp ? 8 : 6}
+              />
+            </div>
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required={isSignUp && !useMagicLink}
+                  minLength={8}
+                />
+              </div>
+            )}
+          </>
         )}
         
         <Button type="submit" className="w-full" disabled={loading}>
@@ -127,7 +168,10 @@ export function LoginForm() {
         <div className="text-center">
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp)
+              setConfirmPassword('') // Clear confirm password when switching
+            }}
             className="text-sm text-green-600 hover:underline"
           >
             {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}

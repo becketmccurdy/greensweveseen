@@ -292,6 +292,7 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
             <Label htmlFor="course">Course</Label>
             <CourseSearchInput
               onCourseSelect={(course) => {
+                console.log('NewRoundForm: Course selected:', course)
                 setSelectedCourse(course)
                 if (errors.course) {
                   setErrors(prev => ({ ...prev, course: '' }))
