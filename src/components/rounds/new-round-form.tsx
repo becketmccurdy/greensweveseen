@@ -21,11 +21,9 @@ interface Course {
   par: number
 }
 
-interface NewRoundFormProps {
-  courses: Course[]
-}
+interface NewRoundFormProps {}
 
-export function NewRoundForm({ courses }: NewRoundFormProps) {
+export function NewRoundForm({}: NewRoundFormProps = {}) {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [totalScore, setTotalScore] = useState('')
   const [date, setDate] = useState<string>(() =>
@@ -317,15 +315,21 @@ export function NewRoundForm({ courses }: NewRoundFormProps) {
               </div>
             )}
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowMapPicker((v) => !v)}
-                disabled={loading}
-                size="sm"
-              >
-                {showMapPicker ? 'Hide Map' : 'Pick from Map'}
-              </Button>
+              {process.env.NEXT_PUBLIC_MAPBOX_TOKEN ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowMapPicker((v) => !v)}
+                  disabled={loading}
+                  size="sm"
+                >
+                  {showMapPicker ? 'Hide Map' : 'Pick from Map'}
+                </Button>
+              ) : (
+                <div className="text-sm text-gray-500">
+                  Map picker unavailable (Mapbox token not configured)
+                </div>
+              )}
             </div>
             {errors.course && (
               <p className="text-sm text-red-600">{errors.course}</p>
