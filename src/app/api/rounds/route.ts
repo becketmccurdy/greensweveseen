@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -14,8 +14,8 @@ const RoundBodySchema = z.object({
   friendUserIds: z.array(z.string()).max(10).optional(),
 })
 
-export async function GET() {
-  const supabase = await createClient()
+export async function GET(request: NextRequest) {
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
@@ -44,9 +44,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError) {

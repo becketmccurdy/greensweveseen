@@ -4,8 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { friendActionSchema } from '@/lib/validations/invite'
 import { generateInviteToken } from '@/lib/utils/crypto'
 
-export async function GET() {
-  const supabase = await createClient()
+export async function GET(request: NextRequest) {
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -80,7 +80,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {

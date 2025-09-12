@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 export async function PUT(request: NextRequest, context: any) {
   const raw = context?.params && typeof context.params.then === 'function' ? await context.params : context?.params
   const { id } = (raw || {}) as { id: string }
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -33,10 +33,10 @@ export async function PUT(request: NextRequest, context: any) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: any) {
+export async function DELETE(request: NextRequest, context: any) {
   const raw = context?.params && typeof context.params.then === 'function' ? await context.params : context?.params
   const { id } = (raw || {}) as { id: string }
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -15,7 +15,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await context.params
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -50,7 +50,7 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await context.params
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -111,7 +111,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await context.params
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {

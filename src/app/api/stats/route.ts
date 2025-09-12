@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = await createClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
