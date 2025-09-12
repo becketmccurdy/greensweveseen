@@ -3,11 +3,17 @@ import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
 
 export async function createClient(request?: NextRequest) {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anon = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !anon) {
+    throw new Error('Supabase env missing: set SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_ANON_KEY/NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  }
   // If we're in API route context and have request, use request cookies
   if (request) {
     return createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      url,
+      anon,
       {
         cookies: {
           get(name: string) {
@@ -28,8 +34,8 @@ export async function createClient(request?: NextRequest) {
   const cookieStore = await cookies()
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anon,
     {
       cookies: {
         get(name: string) {

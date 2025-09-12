@@ -7,9 +7,28 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
 export function getPrisma(): PrismaClient {
   if (!globalForPrisma.prisma) {
-    const url = process.env.DATABASE_URL
+    // Prefer Vercel-provided Prisma URL if available, otherwise fall back.
+    const url =
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_PRISMA_URL ||
+      process.env.POSTGRES_URL ||
+      process.env.POSTGRES_URL_NON_POOLING ||
+      process.env.PRISMA_DATABASE_URL
+
     if (!url) {
-      throw new Error('DATABASE_URL is not set for Prisma client')
+      const tried = [
+        'DATABASE_URL',
+        'POSTGRES_PRISMA_URL',
+        'POSTGRES_URL',
+        'POSTGRES_URL_NON_POOLING',
+        'PRISMA_DATABASE_URL',
+      ]
+      throw new Error(
+        `No database URL found for Prisma client. Tried: ${tried
+          .filter((k) => !process.env[k as keyof NodeJS.ProcessEnv])
+          .join(', ')}.\n` +
+          'Set DATABASE_URL to your Supabase pooled connection string, or use Vercel Postgres integration envs.'
+      )
     }
     globalForPrisma.prisma = new PrismaClient({
       datasources: { db: { url } },
@@ -31,3 +50,4 @@ export const prisma = new Proxy({} as PrismaClient, {
     return (_prisma as any)[prop]
   }
 })
+

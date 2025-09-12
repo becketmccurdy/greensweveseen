@@ -9,7 +9,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")   // pooled, used at runtime
-  directUrl = env("DATABASE_URL")   // using same URL for now
+  directUrl = env("DIRECT_URL")     // direct connection for migrations/CLI
 }
 
 model UserProfile {
