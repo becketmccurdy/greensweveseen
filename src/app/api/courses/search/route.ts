@@ -70,6 +70,8 @@ export async function GET(request: NextRequest) {
       // Add location-based filtering if PostGIS is enabled and location is provided
       if (usePostGIS && hasLocation) {
         // Using PostGIS ST_DWithin for efficient spatial queries
+        // Convert radiusKm to meters for PostGIS
+        const radiusMeters = radiusKm * 1000
         localCoursesQuery = {
           where: {
             AND: [
@@ -78,9 +80,9 @@ export async function GET(request: NextRequest) {
                   { name: { contains: query, mode: 'insensitive' } },
                   { location: { contains: query, mode: 'insensitive' } }
                 ]
-              },
-              // Note: This would require raw SQL with PostGIS - simplified for now
-              // ST_DWithin would be used here with geography cast
+              }
+              // Note: PostGIS spatial filtering would be implemented with raw SQL
+              // ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(lng, lat)::geography, radiusMeters)
             ]
           },
           take: 15
@@ -190,24 +192,37 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Helper function to normalize course names for deduplication
+    const normalizeName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s]/g, '') // Remove punctuation
+        .replace(/\b(golf|course|country|club|cc|gc)\b/g, '') // Remove common golf terms
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+
     // Deduplicate courses by name and location proximity
     const allCourses = [...localCoursesWithPlayCount, ...externalCourses]
     const deduplicatedCourses: any[] = []
-    const seen = new Set<string>()
 
     for (const course of allCourses) {
-      const normalizedName = course.name.toLowerCase().trim()
+      const normalizedName = normalizeName(course.name)
       let isDuplicate = false
 
       // Check for duplicates by name and proximity
       for (const existing of deduplicatedCourses) {
-        const existingNormalizedName = existing.name.toLowerCase().trim()
+        const existingNormalizedName = normalizeName(existing.name)
 
-        // Same name or very similar name
-        if (normalizedName === existingNormalizedName ||
-            normalizedName.includes(existingNormalizedName) ||
-            existingNormalizedName.includes(normalizedName)) {
+        // Check for name similarity
+        const namesSimilar = normalizedName === existingNormalizedName ||
+                           normalizedName.includes(existingNormalizedName) ||
+                           existingNormalizedName.includes(normalizedName) ||
+                           (normalizedName.length > 5 && existingNormalizedName.length > 5 &&
+                            Math.abs(normalizedName.length - existingNormalizedName.length) <= 2)
 
+        if (namesSimilar) {
           // Check proximity if both have coordinates
           if (course.latitude && course.longitude &&
               existing.latitude && existing.longitude) {
@@ -227,8 +242,8 @@ export async function GET(request: NextRequest) {
               }
               break
             }
-          } else {
-            // No coordinates, assume duplicate based on name
+          } else if (normalizedName === existingNormalizedName) {
+            // Exact name match without coordinates
             isDuplicate = true
             if (course.source === 'local' && existing.source === 'external') {
               const index = deduplicatedCourses.indexOf(existing)

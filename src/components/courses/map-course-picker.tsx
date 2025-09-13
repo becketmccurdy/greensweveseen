@@ -198,7 +198,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
       for (const query of searchQueries) {
         try {
           const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`)
-          url.searchParams.set('types', 'poi,address')
+          url.searchParams.set('types', 'poi') // Only POI, exclude address to avoid street addresses
           url.searchParams.set('limit', '10')
           url.searchParams.set('proximity', `${center[0]},${center[1]}`)
           url.searchParams.set('access_token', process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
@@ -209,15 +209,27 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
             .filter((f: any) => {
               if (!f.center || !f.place_name) return false
 
-              // Filter for golf-related places
+              // Only accept POI place types (avoid addresses)
+              const placeTypes = f.place_type || []
+              if (!placeTypes.includes('poi')) {
+                return false
+              }
+
+              // Filter for golf-related places with enhanced detection
               const text = (f.text || '').toLowerCase()
               const placeName = (f.place_name || '').toLowerCase()
+              const properties = f.properties || {}
+              const category = (properties.category || '').toLowerCase()
               const context = (f.context || []).map((c: any) => c.text?.toLowerCase() || '').join(' ')
-              const allText = `${text} ${placeName} ${context}`.toLowerCase()
+              const allText = `${text} ${placeName} ${context} ${category}`.toLowerCase()
 
-              return golfTerms.some(term => allText.includes(term)) ||
-                     allText.includes('resort') ||
-                     allText.includes('links')
+              // Prefer venues with golf category or explicit golf terms
+              const hasGolfCategory = category.includes('golf') || category.includes('golf course')
+              const hasGolfTerms = golfTerms.some(term => allText.includes(term)) ||
+                                 allText.includes('resort') ||
+                                 allText.includes('links')
+
+              return hasGolfCategory || hasGolfTerms
             })
             .map((f: any) => ({
               name: f.text || f.place_name,

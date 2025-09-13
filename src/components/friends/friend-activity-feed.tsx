@@ -91,15 +91,17 @@ export function FriendActivityFeed({ user }: FriendActivityFeedProps) {
   }
 
   const getActivityMessage = (activity: Activity) => {
-    const userName = activity.user.firstName && activity.user.lastName 
+    const userName = activity.user.firstName && activity.user.lastName
       ? `${activity.user.firstName} ${activity.user.lastName}`
       : activity.user.email
 
     switch (activity.type) {
       case 'ROUND_COMPLETED':
-        return `${userName} completed a round with a score of ${activity.data.score}`
+        const score = activity.data.totalScore || activity.data.score
+        return score ? `${userName} completed a round with a score of ${score}` : `${userName} completed a round`
       case 'PERSONAL_BEST':
-        return `${userName} achieved a personal best score of ${activity.data.score}!`
+        const pbScore = activity.data.totalScore || activity.data.score
+        return pbScore ? `${userName} achieved a personal best score of ${pbScore}!` : `${userName} achieved a personal best!`
       case 'HOLE_IN_ONE':
         return `${userName} got a hole in one on hole ${activity.data.hole}!`
       case 'EAGLE':
@@ -107,7 +109,8 @@ export function FriendActivityFeed({ user }: FriendActivityFeedProps) {
       case 'BIRDIE':
         return `${userName} made a birdie on hole ${activity.data.hole}`
       case 'COURSE_RECORD':
-        return `${userName} set a new course record with a score of ${activity.data.score}!`
+        const crScore = activity.data.totalScore || activity.data.score
+        return crScore ? `${userName} set a new course record with a score of ${crScore}!` : `${userName} set a new course record!`
       default:
         return `${userName} completed an activity`
     }

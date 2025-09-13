@@ -46,6 +46,17 @@ export async function POST(request: NextRequest) {
       return R * c
     }
 
+    // Helper function to normalize course names for better deduplication
+    const normalizeName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s]/g, '') // Remove punctuation
+        .replace(/\b(golf|course|country|club|cc|gc)\b/g, '') // Remove common golf terms
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+
     // First check for exact external ID match
     let existingCourse = await prisma.course.findFirst({
       where: {
@@ -58,7 +69,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(existingCourse)
     }
 
-    // Check for similar courses by name and location
+    // Check for similar courses by name and location with improved deduplication
+    const normalizedCourseName = normalizeName(courseName)
     const similarCourses = await prisma.course.findMany({
       where: {
         OR: [
@@ -68,7 +80,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Check for spatial duplicates within 200m if coordinates available
+    // Enhanced duplicate detection within 100-200m radius
     if (courseLatitude && courseLongitude) {
       for (const similar of similarCourses) {
         if (similar.latitude && similar.longitude) {
@@ -77,12 +89,14 @@ export async function POST(request: NextRequest) {
             similar.latitude, similar.longitude
           )
 
-          // Within 200m and similar name - likely the same course
+          // Within 100-200m and similar name - likely the same course
           if (distance < 0.2) {
-            const nameA = courseName.toLowerCase().trim()
-            const nameB = similar.name.toLowerCase().trim()
+            const normalizedExistingName = normalizeName(similar.name)
 
-            if (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA)) {
+            // Check for name similarity using normalized names
+            if (normalizedCourseName === normalizedExistingName ||
+                normalizedCourseName.includes(normalizedExistingName) ||
+                normalizedExistingName.includes(normalizedCourseName)) {
               return NextResponse.json(similar)
             }
           }
