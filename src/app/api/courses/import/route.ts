@@ -29,15 +29,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Course not found in external API' }, { status: 404 })
     }
 
-    // Check if course already exists in our database
-    const existingCourse = await prisma.course.findFirst({
+    // Check if course already exists in our database with better deduplication
+    const courseName = apiCourse.course_name || apiCourse.club_name
+    const courseLatitude = apiCourse.location.latitude
+    const courseLongitude = apiCourse.location.longitude
+
+    // Helper function to calculate distance between two points in km
+    const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+      const R = 6371 // Earth's radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180
+      const dLng = (lng2 - lng1) * Math.PI / 180
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+      return R * c
+    }
+
+    // First check for exact external ID match
+    let existingCourse = await prisma.course.findFirst({
       where: {
-        name: apiCourse.course_name || apiCourse.club_name
+        externalId: externalId.toString(),
+        externalSource: 'golfcourseapi'
       }
     })
 
     if (existingCourse) {
       return NextResponse.json(existingCourse)
+    }
+
+    // Check for similar courses by name and location
+    const similarCourses = await prisma.course.findMany({
+      where: {
+        OR: [
+          { name: { contains: courseName, mode: 'insensitive' } },
+          { name: courseName } // Exact match
+        ]
+      }
+    })
+
+    // Check for spatial duplicates within 200m if coordinates available
+    if (courseLatitude && courseLongitude) {
+      for (const similar of similarCourses) {
+        if (similar.latitude && similar.longitude) {
+          const distance = calculateDistance(
+            courseLatitude, courseLongitude,
+            similar.latitude, similar.longitude
+          )
+
+          // Within 200m and similar name - likely the same course
+          if (distance < 0.2) {
+            const nameA = courseName.toLowerCase().trim()
+            const nameB = similar.name.toLowerCase().trim()
+
+            if (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA)) {
+              return NextResponse.json(similar)
+            }
+          }
+        }
+      }
     }
 
     // Convert and save to our database
@@ -48,11 +98,11 @@ export async function POST(request: NextRequest) {
         name: courseData.name,
         location: courseData.location,
         par: courseData.par,
-        // externalId: courseData.externalId, // Will be enabled after schema migration
-        // externalSource: courseData.externalSource,
+        externalId: courseData.externalId,
+        externalSource: courseData.externalSource,
         latitude: courseData.latitude,
         longitude: courseData.longitude,
-        // address: courseData.address,
+        address: courseData.address,
         createdById: user.id
       }
     })

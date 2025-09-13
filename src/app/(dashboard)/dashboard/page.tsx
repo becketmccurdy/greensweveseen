@@ -1,16 +1,70 @@
 import { DashboardClient } from '@/components/dashboard/dashboard-client'
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-export default function DashboardPage() {
-  // Simplified version - load data client-side to isolate server issues
-  const emptyKPIData = {
-    totalRounds: 0,
-    bestScore: null,
-    averageScore: null,
-    handicap: null,
-    friendsRoundsCount: 0,
+export default async function DashboardPage() {
+  const currentUser = await getCurrentUser()
+
+  if (!currentUser) {
+    redirect('/login')
+  }
+
+  // Load user's rounds from the database
+  const rounds = await prisma.round.findMany({
+    where: {
+      userId: currentUser.id
+    },
+    include: {
+      course: true,
+      friends: {
+        include: {
+          friend: true
+        }
+      }
+    },
+    orderBy: {
+      date: 'desc'
+    },
+    take: 20 // Get recent 20 rounds for dashboard
+  })
+
+  // Transform rounds to match the expected format
+  const transformedRounds = rounds.map(round => ({
+    id: round.id,
+    date: round.date,
+    totalScore: round.totalScore,
+    totalPar: round.totalPar,
+    withFriends: round.withFriends,
+    course: {
+      name: round.course.name,
+      location: round.course.location
+    },
+    participants: round.friends.map(rf => ({
+      friend: {
+        firstName: rf.friend.firstName,
+        lastName: rf.friend.lastName,
+        email: rf.friend.email
+      }
+    }))
+  }))
+
+  // Calculate KPI data
+  const totalRounds = rounds.length
+  const scores = rounds.map(r => r.totalScore)
+  const bestScore = scores.length > 0 ? Math.min(...scores) : null
+  const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null
+  const friendsRoundsCount = rounds.filter(r => r.withFriends).length
+
+  const kpiData = {
+    totalRounds,
+    bestScore,
+    averageScore,
+    handicap: averageScore, // Simplified handicap calculation
+    friendsRoundsCount,
   }
 
   return (
@@ -22,7 +76,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <DashboardClient initialRounds={[]} initialKPIData={emptyKPIData} />
+      <DashboardClient initialRounds={transformedRounds} initialKPIData={kpiData} />
     </div>
   )
 }

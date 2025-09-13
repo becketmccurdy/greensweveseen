@@ -17,7 +17,9 @@ export type MapCourse = {
   longitude: number
   par?: number
   source?: 'local' | 'external' | 'mapbox'
-  externalId?: number
+  externalId?: number | string
+  timesPlayed?: number
+  distance_km?: number
 }
 
 interface MapCoursePickerProps {
@@ -125,7 +127,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
     }
   }
 
-  const searchMapbox = useCallback(async (searchTerm: string) => {
+  const searchCourses = useCallback(async (searchTerm: string) => {
     if (!searchTerm.trim()) {
       setResults([])
       return
@@ -133,49 +135,53 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
 
     setSearchLoading(true)
     try {
-      // First, try to search using our golf courses API for better results
-      try {
-        const golfApiResponse = await fetch(`/api/courses/search?q=${encodeURIComponent(searchTerm)}`)
-        if (golfApiResponse.ok) {
-          const golfData = await golfApiResponse.json()
-          const golfCourses = (golfData.courses || [])
-            .filter((course: any) => course.latitude && course.longitude)
-            .map((course: any) => ({
-              id: course.source === 'external' ? undefined : course.id, // Only set ID for local courses
-              name: course.name,
-              location: course.location,
-              latitude: course.latitude,
-              longitude: course.longitude,
-              par: course.par,
-              source: course.source || 'local',
-              externalId: course.externalId
-            }))
-            .slice(0, 8) // Limit to top 8 results
-
-          if (golfCourses.length > 0) {
-            console.log(`Found ${golfCourses.length} golf courses from API for "${searchTerm}"`)
-            setResults(golfCourses)
-            setSearchLoading(false)
-            return
-          }
-        }
-      } catch (golfApiError) {
-        console.warn('Golf API search failed, falling back to Mapbox:', golfApiError)
+      // Primary search: use our server-side Golf Courses API + local DB with location bias
+      const params = new URLSearchParams({ q: searchTerm })
+      if (center[0] !== 0 && center[1] !== 0) {
+        params.set('lat', center[1].toString())
+        params.set('lng', center[0].toString())
+        params.set('radiusKm', '50')
       }
 
-      // Fallback to Mapbox search if Golf API fails or returns no results
+      const golfApiResponse = await fetch(`/api/courses/search?${params.toString()}`)
+      if (golfApiResponse.ok) {
+        const golfData = await golfApiResponse.json()
+        const golfCourses = (golfData.courses || [])
+          .filter((course: any) => course.latitude && course.longitude)
+          .map((course: any) => ({
+            id: course.source === 'external' ? undefined : course.id,
+            name: course.name,
+            location: course.location,
+            latitude: course.latitude,
+            longitude: course.longitude,
+            par: course.par,
+            source: course.source || 'local',
+            externalId: course.externalId,
+            timesPlayed: course.timesPlayed,
+            distance_km: course.distance_km
+          }))
+          .slice(0, 12) // Increased limit for better selection
+
+        if (golfCourses.length > 0) {
+          console.log(`Found ${golfCourses.length} golf courses from API for "${searchTerm}"`)
+          setResults(golfCourses)
+          setSearchLoading(false)
+          return
+        }
+      }
+    } catch (golfApiError) {
+      console.warn('Golf API search failed, falling back to Mapbox:', golfApiError)
+    }
+
+    // Fallback to Mapbox search if Golf API fails or returns no results
+    try {
       if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
         console.warn('No Mapbox token available for fallback search')
         setResults([])
         setSearchLoading(false)
         return
       }
-      const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchTerm)}.json`)
-      url.searchParams.set('types', 'poi,address')
-      url.searchParams.set('limit', '10')
-      url.searchParams.set('proximity', `${center[0]},${center[1]}`)
-      url.searchParams.set('access_token', process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
-      
+
       // Enhanced golf course search strategy
       const golfTerms = ['golf', 'course', 'club', 'country club', 'cc', 'gc']
       const hasGolfTerm = golfTerms.some(term => searchTerm.toLowerCase().includes(term))
@@ -256,37 +262,32 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
     }
     
     const timeoutId = setTimeout(() => {
-      searchMapbox(value)
+      searchCourses(value)
     }, 500) // 500ms debounce
     
     setSearchTimeoutId(timeoutId)
   }
 
   const createAndSelect = async (c: MapCourse) => {
-    // If it's an external course from Golf API, create it in our DB
+    // If it's an external course from Golf API, import it for richer data and deduplication
     if (c.source === 'external' && c.externalId) {
       try {
-        const r = await fetch('/api/courses', {
+        const r = await fetch('/api/courses/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: c.name,
-            location: c.location,
-            par: c.par || 72,
-            latitude: c.latitude,
-            longitude: c.longitude,
             externalId: c.externalId.toString(),
-            externalSource: 'golfcourseapi'
+            source: 'golfcourseapi'
           }),
         })
         if (r.ok) {
-          const created = await r.json()
-          onSelect({ id: created.id, name: created.name, location: created.location, latitude: created.latitude, longitude: created.longitude, par: created.par })
+          const imported = await r.json()
+          onSelect({ id: imported.id, name: imported.name, location: imported.location, latitude: imported.latitude, longitude: imported.longitude, par: imported.par })
           onClose?.()
           return
         }
       } catch (e) {
-        console.error('Failed to create course from Golf API:', e)
+        console.error('Failed to import course from Golf API:', e)
       }
     }
 
@@ -349,8 +350,20 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
                 className="text-left p-3 border border-border/50 rounded-xl hover:bg-golf-green-light/30 hover:border-golf-green/30 transition-all duration-200 group"
                 onClick={() => onSelect(course)}
               >
-                <div className="font-semibold text-foreground group-hover:text-golf-green transition-colors">{course.name}</div>
-                {course.location && <div className="text-sm text-muted-foreground mt-1">{course.location}</div>}
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-foreground group-hover:text-golf-green transition-colors">{course.name}</div>
+                  {course.timesPlayed && course.timesPlayed > 0 && (
+                    <span className="text-xs bg-blue-50 text-blue-600 rounded-md px-2 py-1 font-medium">
+                      Played {course.timesPlayed}x
+                    </span>
+                  )}
+                </div>
+                {course.location && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {course.location}
+                    {course.distance_km && ` • ${course.distance_km.toFixed(1)}km away`}
+                  </div>
+                )}
                 <div className="text-xs text-golf-green font-medium mt-1">Par {course.par || 72}</div>
               </button>
             ))}
@@ -393,22 +406,41 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
                     }
                   }}
                 >
-                  <div className={cn(
-                    "font-semibold transition-colors flex items-center gap-2",
-                    isVerifiedGolfCourse ? "text-golf-green group-hover:text-golf-green" : "text-foreground group-hover:text-foreground"
-                  )}>
+                  <div className="flex items-start gap-2">
                     <MapPin className={cn(
-                      "h-4 w-4",
+                      "h-4 w-4 mt-0.5 flex-shrink-0",
                       isVerifiedGolfCourse ? "text-golf-green" : "text-muted-foreground"
                     )} />
-                    {r.name}
-                    {r.par && (
-                      <span className="text-xs font-normal text-muted-foreground ml-auto">
-                        Par {r.par}
-                      </span>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn(
+                          "font-semibold transition-colors truncate",
+                          isVerifiedGolfCourse ? "text-golf-green group-hover:text-golf-green" : "text-foreground group-hover:text-foreground"
+                        )}>{r.name}</span>
+                        {isVerifiedGolfCourse && (
+                          <span className="px-2 py-1 text-xs bg-golf-green/10 text-golf-green rounded-md font-medium border border-golf-green/20 flex-shrink-0">
+                            Verified
+                          </span>
+                        )}
+                        {r.timesPlayed && r.timesPlayed > 0 && (
+                          <span className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-md font-medium flex-shrink-0">
+                            Played {r.timesPlayed}x
+                          </span>
+                        )}
+                        {r.par && (
+                          <span className="text-xs font-normal text-muted-foreground flex-shrink-0">
+                            Par {r.par}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {r.location && <div className="text-sm text-muted-foreground mt-1">{r.location}</div>}
+                  {r.location && (
+                    <div className="text-sm text-muted-foreground ml-6">
+                      {r.location}
+                      {r.distance_km && ` • ${r.distance_km.toFixed(1)}km away`}
+                    </div>
+                  )}
                   <div className={cn(
                     "text-xs font-medium mt-2 px-2 py-1 rounded-md inline-block",
                     isExistingCourse
@@ -432,7 +464,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
 
       {search && results.length === 0 && !searchLoading && (
         <div className="text-sm text-muted-foreground text-center py-6 space-y-2">
-          <div className="font-medium">No golf courses found for "{search}"</div>
+          <div className="font-medium">No golf courses found for &quot;{search}&quot;</div>
           <div className="text-xs">Try searching for the course name, city, or famous golf destinations</div>
         </div>
       )}
