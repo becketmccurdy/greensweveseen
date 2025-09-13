@@ -10,6 +10,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "db:seed-courses": "node prisma/seed-courses.js",
     "type-check": "tsc --noEmit",
     "lint": "next lint",
     "format:check": "prettier --check .",
