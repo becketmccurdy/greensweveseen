@@ -16,6 +16,8 @@ export type MapCourse = {
   latitude: number
   longitude: number
   par?: number
+  source?: 'local' | 'external' | 'mapbox'
+  externalId?: number
 }
 
 interface MapCoursePickerProps {
@@ -124,13 +126,50 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
   }
 
   const searchMapbox = useCallback(async (searchTerm: string) => {
-    if (!searchTerm.trim() || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+    if (!searchTerm.trim()) {
       setResults([])
       return
     }
-    
+
     setSearchLoading(true)
     try {
+      // First, try to search using our golf courses API for better results
+      try {
+        const golfApiResponse = await fetch(`/api/courses/search?q=${encodeURIComponent(searchTerm)}`)
+        if (golfApiResponse.ok) {
+          const golfData = await golfApiResponse.json()
+          const golfCourses = (golfData.courses || [])
+            .filter((course: any) => course.latitude && course.longitude)
+            .map((course: any) => ({
+              id: course.source === 'external' ? undefined : course.id, // Only set ID for local courses
+              name: course.name,
+              location: course.location,
+              latitude: course.latitude,
+              longitude: course.longitude,
+              par: course.par,
+              source: course.source || 'local',
+              externalId: course.externalId
+            }))
+            .slice(0, 8) // Limit to top 8 results
+
+          if (golfCourses.length > 0) {
+            console.log(`Found ${golfCourses.length} golf courses from API for "${searchTerm}"`)
+            setResults(golfCourses)
+            setSearchLoading(false)
+            return
+          }
+        }
+      } catch (golfApiError) {
+        console.warn('Golf API search failed, falling back to Mapbox:', golfApiError)
+      }
+
+      // Fallback to Mapbox search if Golf API fails or returns no results
+      if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+        console.warn('No Mapbox token available for fallback search')
+        setResults([])
+        setSearchLoading(false)
+        return
+      }
       const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchTerm)}.json`)
       url.searchParams.set('types', 'poi,address')
       url.searchParams.set('limit', '10')
@@ -179,6 +218,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
               location: f.place_name,
               longitude: f.center[0],
               latitude: f.center[1],
+              source: 'mapbox' as const
             }))
 
           allResults.push(...results)
@@ -197,9 +237,10 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
         return 0
       })
 
+      console.log(`Mapbox fallback found ${golfPrioritized.length} results for "${searchTerm}"`)
       setResults(golfPrioritized.slice(0, 8)) // Limit to 8 best results
     } catch (e) {
-      console.error('Mapbox search failed:', e)
+      console.error('All search methods failed:', e)
       setResults([])
     } finally {
       setSearchLoading(false)
@@ -222,12 +263,45 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
   }
 
   const createAndSelect = async (c: MapCourse) => {
-    // Create in our DB and return
+    // If it's an external course from Golf API, create it in our DB
+    if (c.source === 'external' && c.externalId) {
+      try {
+        const r = await fetch('/api/courses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: c.name,
+            location: c.location,
+            par: c.par || 72,
+            latitude: c.latitude,
+            longitude: c.longitude,
+            externalId: c.externalId.toString(),
+            externalSource: 'golfcourseapi'
+          }),
+        })
+        if (r.ok) {
+          const created = await r.json()
+          onSelect({ id: created.id, name: created.name, location: created.location, latitude: created.latitude, longitude: created.longitude, par: created.par })
+          onClose?.()
+          return
+        }
+      } catch (e) {
+        console.error('Failed to create course from Golf API:', e)
+      }
+    }
+
+    // For Mapbox results or fallback, create a basic course
     try {
       const r = await fetch('/api/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: c.name, location: c.location, par: 72, latitude: c.latitude, longitude: c.longitude }),
+        body: JSON.stringify({
+          name: c.name,
+          location: c.location,
+          par: c.par || 72,
+          latitude: c.latitude,
+          longitude: c.longitude
+        }),
       })
       if (r.ok) {
         const created = await r.json()
@@ -235,7 +309,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
         onClose?.()
       }
     } catch (e) {
-      console.error('Failed to create course from Mapbox:', e)
+      console.error('Failed to create course:', e)
     }
   }
 
@@ -290,38 +364,64 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360, showC
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Search className="h-4 w-4 text-golf-green" />
             <span>Golf courses found ({results.length})</span>
+            {results.some(r => r.source === 'external') && (
+              <span className="text-xs bg-golf-green/10 text-golf-green px-2 py-1 rounded-full ml-auto">
+                Verified courses included
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
             {results.map((r, i) => {
-              const isGolfCourse = ['golf', 'course', 'club', 'country club', 'cc', 'gc', 'links', 'resort'].some(term =>
-                r.name.toLowerCase().includes(term) || (r.location || '').toLowerCase().includes(term)
-              )
+              const isVerifiedGolfCourse = r.source === 'external' || r.source === 'local'
+              const isExistingCourse = r.id && r.source === 'local'
+              const isMapboxResult = !r.source || r.source === 'mapbox'
+
               return (
                 <button
-                  key={i}
+                  key={r.id || i}
                   className={cn(
                     "text-left p-3 border rounded-xl transition-all duration-200 group",
-                    isGolfCourse
+                    isVerifiedGolfCourse
                       ? "border-golf-green/30 hover:bg-golf-green/5 hover:border-golf-green/50 bg-golf-green/5"
                       : "border-border/50 hover:bg-muted/30 hover:border-border"
                   )}
-                  onClick={() => createAndSelect(r)}
+                  onClick={() => {
+                    if (isExistingCourse) {
+                      onSelect(r)
+                    } else {
+                      createAndSelect(r)
+                    }
+                  }}
                 >
                   <div className={cn(
                     "font-semibold transition-colors flex items-center gap-2",
-                    isGolfCourse ? "text-golf-green group-hover:text-golf-green" : "text-foreground group-hover:text-foreground"
+                    isVerifiedGolfCourse ? "text-golf-green group-hover:text-golf-green" : "text-foreground group-hover:text-foreground"
                   )}>
-                    {isGolfCourse && <MapPin className="h-4 w-4 text-golf-green" />}
+                    <MapPin className={cn(
+                      "h-4 w-4",
+                      isVerifiedGolfCourse ? "text-golf-green" : "text-muted-foreground"
+                    )} />
                     {r.name}
+                    {r.par && (
+                      <span className="text-xs font-normal text-muted-foreground ml-auto">
+                        Par {r.par}
+                      </span>
+                    )}
                   </div>
                   {r.location && <div className="text-sm text-muted-foreground mt-1">{r.location}</div>}
                   <div className={cn(
                     "text-xs font-medium mt-2 px-2 py-1 rounded-md inline-block",
-                    isGolfCourse
+                    isExistingCourse
+                      ? "text-golf-green bg-golf-green/10"
+                      : isVerifiedGolfCourse
                       ? "text-golf-green bg-golf-green/10"
                       : "text-info bg-info/10"
                   )}>
-                    {isGolfCourse ? "✓ Golf Course - Click to select" : "Click to add as new course"}
+                    {isExistingCourse
+                      ? "✓ Select this course"
+                      : isVerifiedGolfCourse
+                      ? "✓ Verified Golf Course - Click to add"
+                      : "Click to add as new course"}
                   </div>
                 </button>
               )
