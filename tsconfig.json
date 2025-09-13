@@ -33,6 +33,7 @@
     "node_modules",
     "vitest.config.ts",
     "src/test/**",
-    "tests/**"
+    "tests/**",
+    "prisma/hello-prisma/**"
   ]
 }
