@@ -22,7 +22,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Refresh the session to ensure it's up to date
   const { data: { session } } = await supabase.auth.getSession()
+  
+  // This is critical for maintaining session state across requests
+  await supabase.auth.getUser()
 
   // Protect course creation and editing routes
   if (
