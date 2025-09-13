@@ -226,7 +226,8 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
         }
 
         toast.success(`Round saved successfully! Score: ${round.totalScore}`)
-        router.push('/dashboard')
+        router.push('/courses')
+        router.refresh() // Force page refresh to show updated data
       } else {
         // Remove optimistic update on failure
         removeOptimisticRound(tempId)

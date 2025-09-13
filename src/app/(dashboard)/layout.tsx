@@ -3,6 +3,8 @@ import { Navigation } from '@/components/navigation'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { NavigationProvider } from '@/contexts/navigation-context'
+import { DashboardLayoutClient } from '@/components/dashboard-layout-client'
 
 export default async function DashboardLayout({
   children,
@@ -22,16 +24,15 @@ export default async function DashboardLayout({
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
-        <Navigation user={{
+      <NavigationProvider>
+        <DashboardLayoutClient user={{
           firstName,
           lastName,
           email
-        }} />
-        <main className="pb-16 md:pb-0 md:pl-64">
+        }}>
           {children}
-        </main>
-      </div>
+        </DashboardLayoutClient>
+      </NavigationProvider>
     </ErrorBoundary>
   )
 }
