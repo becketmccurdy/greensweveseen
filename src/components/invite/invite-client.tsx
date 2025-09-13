@@ -7,7 +7,6 @@ import { Loader2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface UserProfile {
-  id: string
   userId: string
   email: string
   firstName: string | null

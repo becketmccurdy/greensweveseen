@@ -10,19 +10,9 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { UserProfile as PrismaUserProfile } from '@prisma/client'
 
-interface UserProfile {
-  id: string
-  userId: string
-  email: string
-  firstName: string | null
-  lastName: string | null
-  bio: string | null
-  location: string | null
-  handicap: number | null
-  createdAt: Date
-  updatedAt: Date
-}
+type UserProfile = PrismaUserProfile
 
 interface SettingsClientProps {
   profile: UserProfile

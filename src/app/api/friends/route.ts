@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
       include: {
         user: {
           select: {
-            id: true,
             userId: true,
             firstName: true,
             lastName: true,
@@ -34,7 +33,6 @@ export async function GET(request: NextRequest) {
         },
         friend: {
           select: {
-            id: true,
             userId: true,
             firstName: true,
             lastName: true,
@@ -55,7 +53,7 @@ export async function GET(request: NextRequest) {
       return {
         id: friendship.id,
         friend: {
-          id: friend.id,
+          userId: friend.userId,
           firstName: friend.firstName,
           lastName: friend.lastName,
           email: friend.email,
@@ -139,7 +137,7 @@ export async function POST(request: NextRequest) {
         include: {
           friend: {
             select: {
-              id: true,
+              userId: true,
               firstName: true,
               lastName: true,
               email: true,
@@ -159,7 +157,7 @@ export async function POST(request: NextRequest) {
         include: {
           user: {
             select: {
-              id: true,
+              userId: true,
               firstName: true,
               lastName: true,
               email: true,
@@ -168,7 +166,7 @@ export async function POST(request: NextRequest) {
           },
           friend: {
             select: {
-              id: true,
+              userId: true,
               firstName: true,
               lastName: true,
               email: true,

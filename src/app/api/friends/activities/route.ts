@@ -18,14 +18,24 @@ export async function GET(request: NextRequest) {
           { userId: user.id }, // User's own activities
           {
             user: {
-              friendships: {
-                some: {
-                  OR: [
-                    { userId: user.id, status: 'ACCEPTED' },
-                    { friendId: user.id, status: 'ACCEPTED' }
-                  ]
+              OR: [
+                {
+                  friendshipsAsUser: {
+                    some: {
+                      friendId: user.id,
+                      status: 'ACCEPTED'
+                    }
+                  }
+                },
+                {
+                  friendshipsAsFriend: {
+                    some: {
+                      userId: user.id,
+                      status: 'ACCEPTED'
+                    }
+                  }
                 }
-              }
+              ]
             }
           }
         ]
@@ -33,7 +43,7 @@ export async function GET(request: NextRequest) {
       include: {
         user: {
           select: {
-            id: true,
+            userId: true,
             firstName: true,
             lastName: true,
             email: true
@@ -75,7 +85,7 @@ export async function POST(request: NextRequest) {
       include: {
         user: {
           select: {
-            id: true,
+            userId: true,
             firstName: true,
             lastName: true,
             email: true

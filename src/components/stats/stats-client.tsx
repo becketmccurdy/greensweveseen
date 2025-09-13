@@ -46,7 +46,6 @@ interface StatsData {
 }
 
 interface UserProfile {
-  id: string
   userId: string
   email: string
   firstName: string | null

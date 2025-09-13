@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     await prisma.$transaction(
       scores.map((s) =>
         prisma.score.upsert({
-          where: { roundId_hole: { roundId, hole: s.hole } },
+          where: { scores_roundId_hole_key: { roundId, hole: s.hole } },
           create: {
             roundId,
             userId: user.id,
