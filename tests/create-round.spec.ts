@@ -28,8 +28,8 @@ test.describe('Create Round Flow', () => {
     // Assert "Round Details" header is visible (page rendered correctly)
     await expect(page.getByText('Round Details')).toBeVisible()
     
-    // Assert form elements are present
-    await expect(page.getByText('Course')).toBeVisible()
+    // Assert key form elements are present
+    await expect(page.getByPlaceholder('Search for a golf course...')).toBeVisible()
     await expect(page.getByText('Total Score')).toBeVisible()
     await expect(page.getByText('Date')).toBeVisible()
   })
