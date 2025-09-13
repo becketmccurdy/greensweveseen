@@ -13,7 +13,6 @@ import { Plus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
 import type { MapCourse } from '@/components/courses/map-course-picker'
-import { CourseSearchInput } from '@/components/courses/course-search-input'
 
 // Mapbox GL is not SSR-friendly; load the picker only on the client
 const MapCoursePicker = dynamic(() => import('@/components/courses/map-course-picker'), {
@@ -39,7 +38,7 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [showNewCourse, setShowNewCourse] = useState(false)
-  const [showMapPicker, setShowMapPicker] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(true)
   const [newCourseName, setNewCourseName] = useState('')
   const [newCourseLocation, setNewCourseLocation] = useState('')
   const [newCoursePar, setNewCoursePar] = useState('72')
@@ -297,17 +296,35 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Course Selection */}
           <div className="space-y-3">
-            <Label htmlFor="course" className="text-base font-medium text-foreground">Golf Course</Label>
-            <CourseSearchInput
-              onCourseSelect={(course) => {
-                console.log('NewRoundForm: Course selected:', course)
-                setSelectedCourse(course)
-                if (errors.course) {
-                  setErrors(prev => ({ ...prev, course: '' }))
-                }
-              }}
-              placeholder="Search for a golf course..."
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="course" className="text-base font-medium text-foreground">Golf Course</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMapPicker(!showMapPicker)}
+                className="text-xs"
+              >
+                {showMapPicker ? 'Hide Map' : 'Show Map'}
+              </Button>
+            </div>
+
+            {showMapPicker && (
+              <div className="border border-border/50 rounded-xl overflow-hidden">
+                <MapCoursePicker
+                  onSelect={(c: MapCourse) => {
+                    if (c.id) {
+                      setSelectedCourse({ id: c.id, name: c.name, location: c.location ?? null, par: c.par ?? 72 })
+                      if (errors.course) setErrors(prev => ({ ...prev, course: '' }))
+                    }
+                  }}
+                  onClose={() => setShowMapPicker(false)}
+                  height={400}
+                  showClose={false}
+                />
+              </div>
+            )}
+
             {selectedCourse && (
               <div className="p-4 bg-golf-green-light border border-golf-green/20 rounded-xl">
                 <div className="flex items-center justify-between">
@@ -321,48 +338,20 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedCourse(null)}
+                    onClick={() => {
+                      setSelectedCourse(null)
+                      setShowMapPicker(true)
+                    }}
                     className="border-golf-green/30 text-golf-green hover:bg-golf-green/10"
                   >
-                    Change
+                    Change Course
                   </Button>
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
-              {process.env.NEXT_PUBLIC_MAPBOX_TOKEN ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowMapPicker((v) => !v)}
-                  disabled={loading}
-                  size="sm"
-                >
-                  {showMapPicker ? 'Hide Map' : 'Pick from Map'}
-                </Button>
-              ) : (
-                <div className="text-sm text-gray-500">
-                  Map picker unavailable (Mapbox token not configured)
-                </div>
-              )}
-            </div>
+
             {errors.course && (
               <p className="text-sm text-red-600">{errors.course}</p>
-            )}
-            {showMapPicker && (
-              <div className="p-3 border rounded-lg">
-                <MapCoursePicker
-                  onSelect={(c: MapCourse) => {
-                    if (c.id) {
-                      setSelectedCourse({ id: c.id, name: c.name, location: c.location ?? null, par: c.par ?? 72 })
-                      setShowMapPicker(false)
-                      if (errors.course) setErrors(prev => ({ ...prev, course: '' }))
-                    }
-                  }}
-                  onClose={() => setShowMapPicker(false)}
-                  height={300}
-                />
-              </div>
             )}
           </div>
 

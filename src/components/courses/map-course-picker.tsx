@@ -5,6 +5,7 @@ import mapboxgl from 'mapbox-gl'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { MapPin, Search, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
@@ -21,9 +22,10 @@ interface MapCoursePickerProps {
   onSelect: (course: MapCourse) => void
   onClose?: () => void
   height?: number
+  showClose?: boolean
 }
 
-export default function MapCoursePicker({ onSelect, onClose, height = 360 }: MapCoursePickerProps) {
+export default function MapCoursePicker({ onSelect, onClose, height = 360, showClose = true }: MapCoursePickerProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [center, setCenter] = useState<[number, number]>([-122.4194, 37.7749])
@@ -135,23 +137,67 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
       url.searchParams.set('proximity', `${center[0]},${center[1]}`)
       url.searchParams.set('access_token', process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
       
-      // Add golf-related keywords to improve search results
-      const golfTerms = ['golf', 'course', 'club', 'country club']
-      const searchWithGolf = golfTerms.some(term => searchTerm.toLowerCase().includes(term)) 
-        ? searchTerm 
-        : `${searchTerm} golf course`
-      
-      const r = await fetch(url.toString().replace(encodeURIComponent(searchTerm), encodeURIComponent(searchWithGolf)))
-      const json = await r.json()
-      const items: MapCourse[] = (json.features || [])
-        .filter((f: any) => f.center && f.place_name)
-        .map((f: any) => ({
-          name: f.text || f.place_name,
-          location: f.place_name,
-          longitude: f.center[0],
-          latitude: f.center[1],
-        }))
-      setResults(items)
+      // Enhanced golf course search strategy
+      const golfTerms = ['golf', 'course', 'club', 'country club', 'cc', 'gc']
+      const hasGolfTerm = golfTerms.some(term => searchTerm.toLowerCase().includes(term))
+
+      // Try multiple search variations for better golf course results
+      const searchQueries = [
+        hasGolfTerm ? searchTerm : `${searchTerm} golf course`,
+        hasGolfTerm ? searchTerm : `${searchTerm} country club`,
+        hasGolfTerm ? searchTerm : `${searchTerm} golf club`
+      ]
+
+      let allResults: any[] = []
+
+      for (const query of searchQueries) {
+        try {
+          const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`)
+          url.searchParams.set('types', 'poi,address')
+          url.searchParams.set('limit', '10')
+          url.searchParams.set('proximity', `${center[0]},${center[1]}`)
+          url.searchParams.set('access_token', process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
+
+          const r = await fetch(url.toString())
+          const json = await r.json()
+          const results = (json.features || [])
+            .filter((f: any) => {
+              if (!f.center || !f.place_name) return false
+
+              // Filter for golf-related places
+              const text = (f.text || '').toLowerCase()
+              const placeName = (f.place_name || '').toLowerCase()
+              const context = (f.context || []).map((c: any) => c.text?.toLowerCase() || '').join(' ')
+              const allText = `${text} ${placeName} ${context}`.toLowerCase()
+
+              return golfTerms.some(term => allText.includes(term)) ||
+                     allText.includes('resort') ||
+                     allText.includes('links')
+            })
+            .map((f: any) => ({
+              name: f.text || f.place_name,
+              location: f.place_name,
+              longitude: f.center[0],
+              latitude: f.center[1],
+            }))
+
+          allResults.push(...results)
+        } catch (e) {
+          console.error(`Search failed for query "${query}":`, e)
+        }
+      }
+
+      // Remove duplicates and prioritize golf-specific results
+      const uniqueResults = Array.from(new Map(allResults.map(item => [item.name, item])).values())
+      const golfPrioritized = uniqueResults.sort((a, b) => {
+        const aGolf = golfTerms.some(term => a.name.toLowerCase().includes(term))
+        const bGolf = golfTerms.some(term => b.name.toLowerCase().includes(term))
+        if (aGolf && !bGolf) return -1
+        if (!aGolf && bGolf) return 1
+        return 0
+      })
+
+      setResults(golfPrioritized.slice(0, 8)) // Limit to 8 best results
     } catch (e) {
       console.error('Mapbox search failed:', e)
       setResults([])
@@ -199,7 +245,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
           <Input
-            placeholder="Search golf courses worldwide (e.g. Pebble Beach, St. Andrews)"
+            placeholder="Search for any golf course (e.g. Pebble Beach, Augusta National, St. Andrews)"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-11 h-12 text-base rounded-xl border-border/50 focus:border-golf-green"
@@ -208,7 +254,7 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
             <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-golf-green h-5 w-5 animate-spin" />
           )}
         </div>
-        {onClose && (
+        {onClose && showClose && (
           <Button variant="outline" type="button" onClick={onClose} className="rounded-xl border-border/50">Close</Button>
         )}
       </div>
@@ -242,28 +288,52 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
       {results.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Search className="h-4 w-4 text-info" />
-            <span>Search results ({results.length})</span>
+            <Search className="h-4 w-4 text-golf-green" />
+            <span>Golf courses found ({results.length})</span>
           </div>
           <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-            {results.map((r, i) => (
-              <button
-                key={i}
-                className="text-left p-3 border border-border/50 rounded-xl hover:bg-info/5 hover:border-info/30 transition-all duration-200 group"
-                onClick={() => createAndSelect(r)}
-              >
-                <div className="font-semibold text-foreground group-hover:text-info transition-colors">{r.name}</div>
-                {r.location && <div className="text-sm text-muted-foreground mt-1">{r.location}</div>}
-                <div className="text-xs text-info font-medium mt-2 px-2 py-1 bg-info/10 rounded-md inline-block">Click to add as new course</div>
-              </button>
-            ))}
+            {results.map((r, i) => {
+              const isGolfCourse = ['golf', 'course', 'club', 'country club', 'cc', 'gc', 'links', 'resort'].some(term =>
+                r.name.toLowerCase().includes(term) || (r.location || '').toLowerCase().includes(term)
+              )
+              return (
+                <button
+                  key={i}
+                  className={cn(
+                    "text-left p-3 border rounded-xl transition-all duration-200 group",
+                    isGolfCourse
+                      ? "border-golf-green/30 hover:bg-golf-green/5 hover:border-golf-green/50 bg-golf-green/5"
+                      : "border-border/50 hover:bg-muted/30 hover:border-border"
+                  )}
+                  onClick={() => createAndSelect(r)}
+                >
+                  <div className={cn(
+                    "font-semibold transition-colors flex items-center gap-2",
+                    isGolfCourse ? "text-golf-green group-hover:text-golf-green" : "text-foreground group-hover:text-foreground"
+                  )}>
+                    {isGolfCourse && <MapPin className="h-4 w-4 text-golf-green" />}
+                    {r.name}
+                  </div>
+                  {r.location && <div className="text-sm text-muted-foreground mt-1">{r.location}</div>}
+                  <div className={cn(
+                    "text-xs font-medium mt-2 px-2 py-1 rounded-md inline-block",
+                    isGolfCourse
+                      ? "text-golf-green bg-golf-green/10"
+                      : "text-info bg-info/10"
+                  )}>
+                    {isGolfCourse ? "✓ Golf Course - Click to select" : "Click to add as new course"}
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
-      
+
       {search && results.length === 0 && !searchLoading && (
-        <div className="text-sm text-gray-500 text-center py-4">
-          No results found. Try a different search term.
+        <div className="text-sm text-muted-foreground text-center py-6 space-y-2">
+          <div className="font-medium">No golf courses found for "{search}"</div>
+          <div className="text-xs">Try searching for the course name, city, or famous golf destinations</div>
         </div>
       )}
     </div>
