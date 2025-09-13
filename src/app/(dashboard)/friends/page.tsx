@@ -10,10 +10,10 @@ export default async function FriendsPage() {
   const profile = await getUserProfile()
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Friends</h1>
-        <p className="text-gray-600">Connect with fellow golfers and track their progress</p>
+    <div className="p-6 md:p-8 lg:p-12 space-y-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Friends</h1>
+        <p className="text-lg text-muted-foreground">Connect with fellow golfers and track their progress</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

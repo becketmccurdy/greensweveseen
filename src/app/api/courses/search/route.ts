@@ -83,28 +83,30 @@ export async function GET(request: NextRequest) {
       source: 'local' as const
     }))
 
-    // Search external API if we have fewer than 5 local results
+    // Search external API to provide more course options
     let externalCourses: any[] = []
-    if (localCourses.length < 5) {
-      const golfAPI = getGolfCourseAPIClient()
-      if (golfAPI) {
-        try {
-          const apiCourses = await golfAPI.searchCourses(query)
-          externalCourses = apiCourses.slice(0, 10 - localCourses.length).map(course => ({
-            id: `external-${course.id}`,
-            name: course.course_name || course.club_name,
-            location: `${course.location.city}, ${course.location.state}`,
-            par: course.tees.male?.[0]?.par_total || course.tees.female?.[0]?.par_total || 72,
-            timesPlayed: 0,
-            source: 'external' as const,
-            externalId: course.id,
-            latitude: course.location.latitude,
-            longitude: course.location.longitude,
-            address: course.location.address
-          }))
-        } catch (error) {
-          console.error('External API search error:', error)
-        }
+    const golfAPI = getGolfCourseAPIClient()
+    if (golfAPI) {
+      try {
+        const apiCourses = await golfAPI.searchCourses(query)
+        externalCourses = apiCourses.slice(0, 15).map(course => ({
+          id: `external-${course.id}`,
+          name: course.course_name || course.club_name,
+          location: course.location.city && course.location.state
+            ? `${course.location.city}, ${course.location.state}`
+            : course.location.address || 'Location unavailable',
+          par: course.tees.male?.[0]?.par_total || course.tees.female?.[0]?.par_total || 72,
+          timesPlayed: 0,
+          source: 'external' as const,
+          externalId: course.id,
+          latitude: course.location.latitude,
+          longitude: course.location.longitude,
+          address: course.location.address
+        }))
+
+        console.log(`Found ${apiCourses.length} external courses for query: ${query}`)
+      } catch (error) {
+        console.error('External API search error:', error)
       }
     }
 
@@ -129,10 +131,12 @@ export async function GET(request: NextRequest) {
         const golfAPI = getGolfCourseAPIClient()
         if (golfAPI) {
           const apiCourses = await golfAPI.searchCourses(query)
-          const externalCourses = apiCourses.slice(0, 10).map(course => ({
+          const externalCourses = apiCourses.slice(0, 15).map(course => ({
             id: `external-${course.id}`,
             name: course.course_name || course.club_name,
-            location: `${course.location.city}, ${course.location.state}`,
+            location: course.location.city && course.location.state
+              ? `${course.location.city}, ${course.location.state}`
+              : course.location.address || 'Location unavailable',
             par: course.tees.male?.[0]?.par_total || course.tees.female?.[0]?.par_total || 72,
             timesPlayed: 0,
             source: 'external' as const,
@@ -141,7 +145,8 @@ export async function GET(request: NextRequest) {
             longitude: course.location.longitude,
             address: course.location.address
           }))
-          
+
+          console.log(`Fallback search found ${apiCourses.length} external courses for query: ${query}`)
           return NextResponse.json({ courses: externalCourses })
         }
       } catch (externalError) {

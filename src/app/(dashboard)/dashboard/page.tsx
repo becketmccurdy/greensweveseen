@@ -14,10 +14,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+    <div className="p-6 md:p-8 lg:p-12 space-y-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard</h1>
+        <p className="text-lg text-muted-foreground">
           Welcome back! Here&apos;s your golf performance overview.
         </p>
       </div>

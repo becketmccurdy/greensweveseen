@@ -288,15 +288,16 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
   }
 
   return (
-    <Card>
+    <Card className="border-0 shadow-soft">
       <CardHeader>
-        <CardTitle>Round Details</CardTitle>
+        <CardTitle className="text-2xl font-semibold text-foreground">Round Details</CardTitle>
+        <p className="text-muted-foreground mt-2">Enter the details of your golf round below</p>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Course Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="course">Course</Label>
+          <div className="space-y-3">
+            <Label htmlFor="course" className="text-base font-medium text-foreground">Golf Course</Label>
             <CourseSearchInput
               onCourseSelect={(course) => {
                 console.log('NewRoundForm: Course selected:', course)
@@ -308,19 +309,20 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
               placeholder="Search for a golf course..."
             />
             {selectedCourse && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="p-4 bg-golf-green-light border border-golf-green/20 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-green-900">{selectedCourse.name}</div>
-                    <div className="text-sm text-green-700">
+                    <div className="font-semibold text-golf-green">{selectedCourse.name}</div>
+                    <div className="text-sm text-golf-green/80 mt-1">
                       {selectedCourse.location} • Par {selectedCourse.par}
                     </div>
                   </div>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => setSelectedCourse(null)}
+                    className="border-golf-green/30 text-golf-green hover:bg-golf-green/10"
                   >
                     Change
                   </Button>
@@ -365,9 +367,9 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
           </div>
 
           {/* Score and Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="score">Total Score</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label htmlFor="score" className="text-base font-medium text-foreground">Total Score</Label>
               <Input
                 id="score"
                 type="number"
@@ -388,8 +390,8 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
                 <p className="text-sm text-red-600">{errors.score}</p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+            <div className="space-y-3">
+              <Label htmlFor="date" className="text-base font-medium text-foreground">Date Played</Label>
               <Input
                 id="date"
                 type="date"
@@ -410,8 +412,8 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
           </div>
 
           {/* Weather */}
-          <div className="space-y-2">
-            <Label htmlFor="weather">Weather (optional)</Label>
+          <div className="space-y-3">
+            <Label htmlFor="weather" className="text-base font-medium text-foreground">Weather (optional)</Label>
             <Input
               id="weather"
               value={weather}
@@ -421,9 +423,9 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
           </div>
 
           {/* Friends */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label htmlFor="withFriends">Played with friends?</Label>
+              <Label htmlFor="withFriends" className="text-base font-medium text-foreground">Played with friends?</Label>
               <input
                 id="withFriends"
                 type="checkbox"
@@ -434,18 +436,18 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
               />
             </div>
             {withFriends && (
-              <div className="p-3 border rounded-lg space-y-2">
+              <div className="p-4 border border-border/50 rounded-xl space-y-3 bg-muted/30">
                 {friends.length === 0 ? (
-                  <p className="text-sm text-gray-500">No accepted friends yet.</p>
+                  <p className="text-sm text-muted-foreground">No accepted friends yet. Add friends to track group rounds!</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {friends.map((f) => {
                       const checked = selectedFriendIds.includes(f.userId)
                       return (
-                        <label key={f.userId} className="flex items-center gap-2 text-sm">
+                        <label key={f.userId} className="flex items-center gap-3 text-sm font-medium p-2 rounded-lg hover:bg-background/50 transition-colors cursor-pointer">
                           <input
                             type="checkbox"
-                            className="h-4 w-4"
+                            className="h-4 w-4 text-golf-green rounded border-border focus:ring-golf-green focus:ring-2"
                             checked={checked}
                             onChange={(e) => {
                               setSelectedFriendIds((prev) =>
@@ -453,7 +455,7 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
                               )
                             }}
                           />
-                          <span>{f.name}</span>
+                          <span className="text-foreground">{f.name}</span>
                         </label>
                       )
                     })}
@@ -464,32 +466,36 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
           </div>
 
           {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
+          <div className="space-y-3">
+            <Label htmlFor="notes" className="text-base font-medium text-foreground">Round Notes (optional)</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="How did the round go? Any highlights or areas to improve?"
-              rows={3}
+              placeholder="How did the round go? Any highlights, memorable shots, or areas to improve?"
+              rows={4}
+              className="resize-none rounded-xl"
             />
           </div>
 
           {/* Submit */}
-          <Button
-            type="submit"
-            disabled={!selectedCourse || (!useHoleByHole && !totalScore) || loading}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Round'
-            )}
-          </Button>
+          <div className="pt-4 border-t border-border/50">
+            <Button
+              type="submit"
+              disabled={!selectedCourse || (!useHoleByHole && !totalScore) || loading}
+              className="w-full h-12 text-base font-semibold rounded-xl"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                  Saving Round...
+                </>
+              ) : (
+                'Save Golf Round'
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

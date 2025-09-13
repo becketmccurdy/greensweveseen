@@ -194,44 +194,44 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            placeholder="Search golf courses (e.g. Pebble Beach)" 
-            value={search} 
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Input
+            placeholder="Search golf courses worldwide (e.g. Pebble Beach, St. Andrews)"
+            value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-11 h-12 text-base rounded-xl border-border/50 focus:border-golf-green"
           />
           {searchLoading && (
-            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-golf-green h-5 w-5 animate-spin" />
           )}
         </div>
         {onClose && (
-          <Button variant="outline" type="button" onClick={onClose}>Close</Button>
+          <Button variant="outline" type="button" onClick={onClose} className="rounded-xl border-border/50">Close</Button>
         )}
       </div>
       
-      <div ref={mapContainer} style={{ height }} className="rounded-lg overflow-hidden border" />
+      <div ref={mapContainer} style={{ height }} className="rounded-xl overflow-hidden border border-border/50 shadow-soft" />
 
       {/* Database courses */}
       {dbNearby.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="h-4 w-4" />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <MapPin className="h-4 w-4 text-golf-green" />
             <span>Nearby courses ({dbNearby.length})</span>
           </div>
-          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
             {dbNearby.map((course, i) => (
-              <button 
-                key={course.id || i} 
-                className="text-left p-3 border rounded hover:bg-gray-50 transition-colors"
+              <button
+                key={course.id || i}
+                className="text-left p-3 border border-border/50 rounded-xl hover:bg-golf-green-light/30 hover:border-golf-green/30 transition-all duration-200 group"
                 onClick={() => onSelect(course)}
               >
-                <div className="font-medium text-gray-900">{course.name}</div>
-                {course.location && <div className="text-sm text-gray-600">{course.location}</div>}
-                <div className="text-xs text-gray-500">Par {course.par || 72}</div>
+                <div className="font-semibold text-foreground group-hover:text-golf-green transition-colors">{course.name}</div>
+                {course.location && <div className="text-sm text-muted-foreground mt-1">{course.location}</div>}
+                <div className="text-xs text-golf-green font-medium mt-1">Par {course.par || 72}</div>
               </button>
             ))}
           </div>
@@ -240,21 +240,21 @@ export default function MapCoursePicker({ onSelect, onClose, height = 360 }: Map
 
       {/* Search results */}
       {results.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Search className="h-4 w-4" />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Search className="h-4 w-4 text-info" />
             <span>Search results ({results.length})</span>
           </div>
-          <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
             {results.map((r, i) => (
-              <button 
-                key={i} 
-                className="text-left p-3 border rounded hover:bg-gray-50 transition-colors"
+              <button
+                key={i}
+                className="text-left p-3 border border-border/50 rounded-xl hover:bg-info/5 hover:border-info/30 transition-all duration-200 group"
                 onClick={() => createAndSelect(r)}
               >
-                <div className="font-medium text-gray-900">{r.name}</div>
-                {r.location && <div className="text-sm text-gray-600">{r.location}</div>}
-                <div className="text-xs text-green-600">Click to add as new course</div>
+                <div className="font-semibold text-foreground group-hover:text-info transition-colors">{r.name}</div>
+                {r.location && <div className="text-sm text-muted-foreground mt-1">{r.location}</div>}
+                <div className="text-xs text-info font-medium mt-2 px-2 py-1 bg-info/10 rounded-md inline-block">Click to add as new course</div>
               </button>
             ))}
           </div>

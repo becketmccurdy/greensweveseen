@@ -53,29 +53,70 @@ class GolfCourseAPIClient {
   }
 
   private async makeRequest<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      headers: {
-        'Authorization': `Key ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Golf Course API: Invalid or missing API key')
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        headers: {
+          'Authorization': `Key ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'GreensWeveSeen/1.0'
+        },
+        signal: controller.signal
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Golf Course API: Invalid or missing API key')
+        }
+        if (response.status === 429) {
+          throw new Error('Golf Course API: Rate limit exceeded')
+        }
+        throw new Error(`Golf Course API error: ${response.status} ${response.statusText}`)
       }
-      throw new Error(`Golf Course API error: ${response.status} ${response.statusText}`)
+
+      return response.json()
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    return response.json()
   }
 
   async searchCourses(query: string): Promise<GolfCourseAPICourse[]> {
     try {
-      const response = await this.makeRequest<GolfCourseAPISearchResponse>(
-        `/v1/search?search_query=${encodeURIComponent(query)}`
-      )
-      return response.courses || []
+      // Multiple search strategies to find more courses
+      const searchQueries = [
+        query, // Original query
+        `${query} golf course`, // Add golf course to query
+        `${query} country club`, // Add country club to query
+      ]
+
+      const allResults: GolfCourseAPICourse[] = []
+      const seenIds = new Set<number>()
+
+      for (const searchQuery of searchQueries) {
+        try {
+          const response = await this.makeRequest<GolfCourseAPISearchResponse>(
+            `/v1/search?search_query=${encodeURIComponent(searchQuery)}&limit=20`
+          )
+
+          const newCourses = (response.courses || []).filter(course => {
+            if (seenIds.has(course.id)) return false
+            seenIds.add(course.id)
+            return true
+          })
+
+          allResults.push(...newCourses)
+
+          // Stop searching if we have enough results
+          if (allResults.length >= 15) break
+        } catch (error) {
+          console.warn(`Search failed for query "${searchQuery}":`, error)
+          continue
+        }
+      }
+
+      return allResults.slice(0, 20) // Return max 20 results
     } catch (error) {
       console.error('Golf Course API search error:', error)
       return []
@@ -88,6 +129,30 @@ class GolfCourseAPIClient {
     } catch (error) {
       console.error('Golf Course API get course error:', error)
       return null
+    }
+  }
+
+  async searchByLocation(latitude: number, longitude: number, radius: number = 25): Promise<GolfCourseAPICourse[]> {
+    try {
+      const response = await this.makeRequest<GolfCourseAPISearchResponse>(
+        `/v1/search?lat=${latitude}&lng=${longitude}&radius=${radius}&limit=25`
+      )
+      return response.courses || []
+    } catch (error) {
+      console.error('Golf Course API location search error:', error)
+      return []
+    }
+  }
+
+  async searchByState(state: string): Promise<GolfCourseAPICourse[]> {
+    try {
+      const response = await this.makeRequest<GolfCourseAPISearchResponse>(
+        `/v1/search?state=${encodeURIComponent(state)}&limit=30`
+      )
+      return response.courses || []
+    } catch (error) {
+      console.error('Golf Course API state search error:', error)
+      return []
     }
   }
 

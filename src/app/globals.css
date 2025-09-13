@@ -117,7 +117,46 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: "rlig" 1, "calt" 1, "kern" 1;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+  }
+
+  /* Enhanced typography scales */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+    font-weight: 700;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl lg:text-4xl;
+    font-weight: 600;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl lg:text-3xl;
+    font-weight: 600;
+  }
+
+  /* Improved body text */
+  p {
+    line-height: 1.7;
+  }
+
+  /* Better link styling */
+  a {
+    @apply transition-colors duration-200;
+  }
+
+  /* Form elements typography */
+  input, textarea, select {
+    font-feature-settings: "tnum" 1;
   }
 
   /* Modern scrollbar styling */

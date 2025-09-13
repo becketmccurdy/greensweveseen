@@ -52,14 +52,19 @@ export function Navigation({ user }: NavigationProps) {
       {/* Mobile menu button */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3 shadow-soft">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-golf-green">GreensWeveSeen</h1>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-golf-green-light flex items-center justify-center">
+              <span className="text-sm font-bold text-golf-green">G</span>
+            </div>
+            <h1 className="text-lg font-semibold text-golf-green">GreensWeveSeen</h1>
+          </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="hover:bg-golf-green-light/50"
+            className="hover:bg-golf-green-light/50 rounded-xl"
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
@@ -70,12 +75,15 @@ export function Navigation({ user }: NavigationProps) {
       )}
 
       {/* Desktop collapse button */}
-      <div className="hidden md:block fixed top-4 left-4 z-50">
+      <div className={cn(
+        "hidden md:block fixed top-6 z-50 transition-all duration-300",
+        desktopCollapsed ? "left-6" : "left-80"
+      )}>
         <Button
           variant="outline"
           size="icon"
           onClick={() => setDesktopCollapsed(!desktopCollapsed)}
-          className="bg-background/95 backdrop-blur-sm shadow-soft hover:shadow-medium hover:bg-golf-green-light/50 border-border/50"
+          className="bg-background/95 backdrop-blur-sm shadow-soft hover:shadow-medium hover:bg-golf-green-light/50 border-border/50 rounded-xl"
         >
           <Menu className="h-4 w-4" />
         </Button>
@@ -83,7 +91,7 @@ export function Navigation({ user }: NavigationProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 bg-background/95 backdrop-blur-sm border-r border-border/50 transform transition-all duration-300 ease-in-out shadow-strong",
+        "fixed inset-y-0 left-0 z-40 bg-background/98 backdrop-blur-md border-r border-border/50 transform transition-all duration-300 ease-in-out shadow-strong",
         "md:translate-x-0",
         desktopCollapsed ? "md:w-20" : "md:w-72",
         mobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full",
