@@ -166,7 +166,7 @@ export function Navigation({ user }: NavigationProps) {
               <div className="hidden md:flex flex-col items-center space-y-2">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-green-700">
-                    {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                    {(user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
                   </span>
                 </div>
                 <Button
