@@ -50,13 +50,14 @@ export function Navigation({ user }: NavigationProps) {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3 shadow-soft">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-green-700">GreensWeveSeen</h1>
+          <h1 className="text-lg font-semibold text-golf-green">GreensWeveSeen</h1>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="hover:bg-golf-green-light/50"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
@@ -71,10 +72,10 @@ export function Navigation({ user }: NavigationProps) {
       {/* Desktop collapse button */}
       <div className="hidden md:block fixed top-4 left-4 z-50">
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setDesktopCollapsed(!desktopCollapsed)}
-          className="bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+          className="bg-background/95 backdrop-blur-sm shadow-soft hover:shadow-medium hover:bg-golf-green-light/50 border-border/50"
         >
           <Menu className="h-4 w-4" />
         </Button>
@@ -82,30 +83,32 @@ export function Navigation({ user }: NavigationProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out",
+        "fixed inset-y-0 left-0 z-40 bg-background/95 backdrop-blur-sm border-r border-border/50 transform transition-all duration-300 ease-in-out shadow-strong",
         "md:translate-x-0",
-        desktopCollapsed ? "md:w-16" : "md:w-64",
-        mobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full",
+        desktopCollapsed ? "md:w-20" : "md:w-72",
+        mobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full",
         "md:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center px-6 py-4 border-b border-gray-200 overflow-hidden">
+          <div className="flex items-center px-6 py-6 border-b border-border/50 overflow-hidden">
             <h1 className={cn(
-              "font-bold text-green-700 transition-all duration-300",
+              "font-bold text-golf-green transition-all duration-300",
               desktopCollapsed ? "hidden md:hidden" : "text-xl"
             )}>
               {desktopCollapsed ? "G" : "GreensWeveSeen"}
             </h1>
             {desktopCollapsed && (
-              <div className="hidden md:block text-xl font-bold text-green-700 text-center w-full">
-                G
+              <div className="hidden md:flex items-center justify-center text-2xl font-bold text-golf-green w-full">
+                <div className="w-10 h-10 rounded-xl bg-golf-green-light flex items-center justify-center">
+                  G
+                </div>
               </div>
             )}
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-4 py-6 space-y-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -115,28 +118,30 @@ export function Navigation({ user }: NavigationProps) {
                   prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors relative group",
+                    "flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group hover:scale-[1.02] active:scale-[0.98]",
                     isActive
-                      ? "bg-green-100 text-green-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                      ? "bg-golf-green-light text-golf-green shadow-soft"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     desktopCollapsed && "md:justify-center md:px-2"
                   )}
                   title={desktopCollapsed ? item.name : undefined}
                 >
                   <item.icon className={cn(
-                    "h-5 w-5 transition-all",
-                    desktopCollapsed ? "md:mr-0" : "mr-3"
+                    "h-5 w-5 transition-all duration-200",
+                    desktopCollapsed ? "md:mr-0" : "mr-3",
+                    isActive ? "text-golf-green" : ""
                   )} />
                   <span className={cn(
-                    "transition-all duration-300",
+                    "transition-all duration-300 font-medium",
                     desktopCollapsed && "md:hidden"
                   )}>
                     {item.name}
                   </span>
-                  {/* Tooltip for collapsed state */}
+                  {/* Modern tooltip for collapsed state */}
                   {desktopCollapsed && (
-                    <div className="hidden md:group-hover:block absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
+                    <div className="hidden md:group-hover:flex absolute left-full ml-3 px-3 py-2 bg-foreground text-background text-sm rounded-lg whitespace-nowrap z-50 items-center shadow-strong">
                       {item.name}
+                      <div className="absolute right-full w-0 h-0 border-4 border-transparent border-r-foreground" />
                     </div>
                   )}
                 </Link>
@@ -145,27 +150,38 @@ export function Navigation({ user }: NavigationProps) {
           </nav>
 
           {/* User info and sign out */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-border/50 p-4">
             {!desktopCollapsed ? (
               <>
-                <div className="mb-3">
-                  <p className="text-sm font-medium text-gray-900">{user.firstName || user.email}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                <div className="mb-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-10 h-10 bg-golf-green-light rounded-xl flex items-center justify-center">
+                      <span className="text-sm font-semibold text-golf-green">
+                        {(user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {user.firstName || user.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-3 h-4 w-4" />
                   Sign out
                 </Button>
               </>
             ) : (
-              <div className="hidden md:flex flex-col items-center space-y-2">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-green-700">
+              <div className="hidden md:flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 bg-golf-green-light rounded-xl flex items-center justify-center shadow-soft">
+                  <span className="text-base font-semibold text-golf-green">
                     {(user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
                   </span>
                 </div>
@@ -173,7 +189,7 @@ export function Navigation({ user }: NavigationProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleSignOut}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
                   title="Sign out"
                 >
                   <LogOut className="h-4 w-4" />
@@ -182,17 +198,28 @@ export function Navigation({ user }: NavigationProps) {
             )}
             {/* Mobile always shows full version */}
             <div className="md:hidden">
-              <div className="mb-3">
-                <p className="text-sm font-medium text-gray-900">{user.firstName || user.email}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
+              <div className="mb-4">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-10 h-10 bg-golf-green-light rounded-xl flex items-center justify-center">
+                    <span className="text-sm font-semibold text-golf-green">
+                      {(user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {user.firstName || user.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleSignOut}
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
               >
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOut className="mr-3 h-4 w-4" />
                 Sign out
               </Button>
             </div>

@@ -5,48 +5,108 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Enhanced background with subtle warmth */
+    --background: 0 0% 99%;
+    --foreground: 215 27.9% 16.9%;
+
+    /* Card styling with elevated feel */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 27.9% 16.9%;
+
+    /* Popover improvements */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142.1 76.2% 36.3%;
-    --radius: 0.5rem;
+    --popover-foreground: 215 27.9% 16.9%;
+
+    /* Enhanced golf green primary colors */
+    --primary: 140 65% 45%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Sophisticated secondary palette */
+    --secondary: 215 16% 97%;
+    --secondary-foreground: 215 19% 35%;
+
+    /* Refined muted tones */
+    --muted: 215 16% 96%;
+    --muted-foreground: 215 16% 46%;
+
+    /* Modern accent colors */
+    --accent: 215 16% 95%;
+    --accent-foreground: 215 19% 35%;
+
+    /* Softer destructive colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Subtle borders */
+    --border: 215 14% 89%;
+    --input: 215 14% 89%;
+
+    /* Focus ring matching primary */
+    --ring: 140 65% 45%;
+
+    /* Increased radius for modern look */
+    --radius: 0.75rem;
+
+    /* Custom golf-themed colors */
+    --golf-green: 140 65% 45%;
+    --golf-green-light: 140 50% 85%;
+    --golf-fairway: 120 40% 60%;
+    --golf-sand: 45 85% 75%;
+    --golf-water: 210 100% 65%;
+    --success: 140 65% 45%;
+    --warning: 45 93% 58%;
+    --info: 210 100% 65%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142.4 71.8% 29.2%;
+    /* Dark mode with rich, sophisticated tones */
+    --background: 215 28% 9%;
+    --foreground: 213 31% 91%;
+
+    /* Enhanced dark cards */
+    --card: 215 28% 12%;
+    --card-foreground: 213 31% 91%;
+
+    /* Dark popover */
+    --popover: 215 28% 12%;
+    --popover-foreground: 213 31% 91%;
+
+    /* Vibrant golf green for dark mode */
+    --primary: 140 70% 55%;
+    --primary-foreground: 215 28% 9%;
+
+    /* Dark secondary */
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 213 31% 91%;
+
+    /* Dark muted */
+    --muted: 215 28% 17%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+
+    /* Dark accent */
+    --accent: 215 28% 17%;
+    --accent-foreground: 213 31% 91%;
+
+    /* Dark destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 213 31% 91%;
+
+    /* Dark borders */
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+
+    /* Dark focus ring */
+    --ring: 140 70% 55%;
+
+    /* Dark golf colors */
+    --golf-green: 140 70% 55%;
+    --golf-green-light: 140 40% 25%;
+    --golf-fairway: 120 30% 40%;
+    --golf-sand: 45 60% 45%;
+    --golf-water: 210 80% 45%;
+    --success: 140 70% 55%;
+    --warning: 45 93% 58%;
+    --info: 210 80% 45%;
   }
 }
 
@@ -54,7 +114,56 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Modern scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border/80;
+  }
+
+  /* Improved focus states */
+  .focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Smooth transitions for theme switching */
+  * {
+    transition-property: background-color, border-color, color;
+    transition-duration: 200ms;
+    transition-timing-function: ease-in-out;
+  }
+
+  /* Glass morphism utility */
+  .glass {
+    @apply bg-background/80 backdrop-blur-sm border border-border/50;
+  }
+
+  /* Enhanced shadow utilities */
+  .shadow-soft {
+    box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.05), 0 4px 16px -4px rgb(0 0 0 / 0.05);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 16px -4px rgb(0 0 0 / 0.1), 0 8px 32px -8px rgb(0 0 0 / 0.05);
+  }
+
+  .shadow-strong {
+    box-shadow: 0 8px 32px -8px rgb(0 0 0 / 0.15), 0 16px 64px -16px rgb(0 0 0 / 0.1);
   }
 }
