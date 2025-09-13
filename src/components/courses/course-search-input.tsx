@@ -203,7 +203,7 @@ export function CourseSearchInput({
         <Card ref={resultsRef} className="absolute top-full left-0 right-0 z-50 mt-1 max-h-80 overflow-y-auto">
           <CardContent className="p-2">
             {loading ? (
-              <div className="p-4 text-center text-gray-500">Searching...</div>
+              <div className="p-4 text-center text-gray-500">Searching courses...</div>
             ) : results.length > 0 ? (
               <div className="space-y-1">
                 {/* Group courses by played status */}
@@ -276,10 +276,54 @@ export function CourseSearchInput({
                       ))}
                   </>
                 )}
+                
+                {/* Helpful footer when results are shown */}
+                {results.length > 0 && results.length < 5 && showAddNew && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500 mb-2">
+                        Don't see your course?
+                      </div>
+                      <Button
+                        onClick={handleAddNewCourse}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-auto py-1"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add a new course
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="p-4 text-center">
-                <div className="text-gray-500 mb-3">No courses found for "{query}"</div>
+              <div className="p-4">
+                <div className="text-center mb-4">
+                  <div className="text-gray-500 mb-2">No courses found for "{query}"</div>
+                  <div className="text-xs text-gray-400 mb-3">
+                    Try searching for a city, course name, or location
+                  </div>
+                </div>
+                
+                {/* Search suggestions */}
+                {query.length >= 2 && (
+                  <div className="mb-4">
+                    <div className="text-xs font-medium text-gray-600 mb-2">Try these popular courses:</div>
+                    <div className="space-y-1">
+                      {['Augusta National', 'Pebble Beach', 'St. Andrews', 'Torrey Pines'].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setQuery(suggestion)}
+                          className="w-full text-left px-2 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 {showAddNew && (
                   <Button
                     onClick={handleAddNewCourse}

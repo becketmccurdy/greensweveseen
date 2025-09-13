@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error(`Failed to add ${courseData.name}:`, error)
-        results.push({ status: 'error', course: courseData.name, error: error.message })
+        results.push({ status: 'error', course: courseData.name, error: error instanceof Error ? error.message : 'Unknown error' })
       }
     }
     
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Course seeding error:', error)
     return NextResponse.json(
-      { error: 'Failed to seed courses', details: error.message },
+      { error: 'Failed to seed courses', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
