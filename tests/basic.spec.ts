@@ -8,7 +8,7 @@ test.describe('GreensWeveSeen App', () => {
     await expect(page).toHaveTitle(/GreensWeveSeen/)
     
     // Check for key elements on the landing page
-    await expect(page.locator('text=GreensWeveSeen')).toBeVisible()
+    await expect(page.getByRole('heading', { name: /GreensWeveSeen/i })).toBeVisible()
   })
 
   test('should navigate to login page', async ({ page }) => {

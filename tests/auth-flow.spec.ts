@@ -19,16 +19,19 @@ test.describe('Authentication Flow', () => {
     // Try to submit empty form
     await page.getByRole('button', { name: /sign in/i }).click()
     
-    // Should show validation errors
-    await expect(page.getByText(/email.*required/i).or(page.getByText(/invalid.*email/i))).toBeVisible()
+    // Our form uses native required validation; assert we remain on the login page
+    await expect(page).toHaveURL(/.*login/)
+    await expect(page.locator('#email')).toBeVisible()
   })
 
   test('should show signup option', async ({ page }) => {
     await page.goto('/login')
     
     // Should have link to signup
-    const signupLink = page.getByRole('link', { name: /sign up/i }).or(page.getByText(/create.*account/i))
-    await expect(signupLink).toBeVisible()
+    const signupCta = page.getByRole('button', { name: /sign up/i })
+      .or(page.getByText(/need.*account.*sign up/i))
+      .or(page.getByRole('link', { name: /sign up/i }))
+    await expect(signupCta).toBeVisible()
   })
 
   test('should handle password reset flow', async ({ page }) => {

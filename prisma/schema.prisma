@@ -1,94 +1,88 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 // prisma/schema.prisma
+// Aligns Prisma models with existing Supabase tables used by the app
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")   // pooled, used at runtime
-  directUrl = env("DIRECT_URL")     // direct connection for migrations/CLI
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model UserProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique // Supabase auth user ID
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  bio       String?
-  location  String?
-  handicap  Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  userId     String   @id // Supabase auth user ID and existing PK in DB
+  email      String   @unique
+  firstName  String?
+  lastName   String?
+  bio        String?
+  location   String?
+  handicap   Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  rounds         Round[]
-  scores         Score[]
-  createdCourses Course[]         @relation("CreatedCourses")
-  friendships    Friendship[]     @relation("UserFriendships")
-  friendOf       Friendship[]     @relation("FriendOf")
-  activities     FriendActivity[]
-  invitesSent    FriendInvite[]   @relation("InvitesSent")
-  roundsAsFriend RoundFriend[]    @relation("RoundFriends")
+  rounds     Round[]
+  scores     Score[]
+  activities FriendActivity[]
+  invites    FriendInvite[]   @relation("InvitesByUser")
+  friendshipsAsUser  Friendship[] @relation("UserFriendships")
+  friendshipsAsFriend Friendship[] @relation("FriendFriendships")
+  roundFriends RoundFriend[]
 
   @@map("user_profiles")
 }
 
 model Course {
-  id             String   @id @default(cuid())
-  name           String
-  location       String?
-  par            Int      @default(72)
-  holes          Int      @default(18)
-  rating         Float?
-  slope          Int?
-  description    String?
-  latitude       Float?
-  longitude      Float?
-  address        String?
-  externalId     String?  // ID from external API (e.g., GolfCourseAPI)
-  externalSource String?  // Source of external data (e.g., "golfcourseapi")
-  createdById    String   // User who created this course
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  location     String?
+  par          Int
+  holes        Int?
+  rating       Float?
+  slope        Int?
+  description  String?
+  latitude     Float?
+  longitude    Float?
+  address      String?
+  externalId   String?
+  externalSource String?
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  createdBy UserProfile @relation("CreatedCourses", fields: [createdById], references: [userId], onDelete: Cascade)
-  rounds    Round[]
+  rounds Round[]
 
-  @@index([createdById])
-  @@index([externalId, externalSource])
   @@map("courses")
 }
 
 model Round {
-  id        String   @id @default(cuid())
-  userId    String
-  courseId  String
-  date      DateTime @default(now())
-  totalScore Int
-  totalPar   Int      @default(72)
-  weather    String?
-  notes      String?
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  date        DateTime @default(now())
+  totalScore  Int
+  totalPar    Int      @default(72)
+  weather     String?
+  notes       String?
   withFriends Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  user   UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  course Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  scores Score[]
-  participants RoundFriend[]
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  scores      Score[]
+  friends     RoundFriend[]
 
   @@index([userId, date(sort: Desc)])
   @@map("rounds")
 }
 
 model Score {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   roundId  String
   userId   String
   hole     Int
@@ -96,45 +90,30 @@ model Score {
   par      Int
   putts    Int?
   fairway  Boolean?
-  gir      Boolean? // Green in regulation
+  gir      Boolean?
   notes    String?
 
   // Relations
-  round Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
   user  UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
-  @@unique([roundId, hole])
+  @@unique([roundId, hole], name: "scores_roundId_hole_key")
   @@index([roundId])
   @@index([userId])
   @@map("scores")
-}
-
-// Join table to associate additional participants to a round
-model RoundFriend {
-  id            String   @id @default(cuid())
-  roundId       String
-  friendUserId  String
-  createdAt     DateTime @default(now())
-
-  // Relations
-  round  Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  friend UserProfile @relation("RoundFriends", fields: [friendUserId], references: [userId], onDelete: Cascade)
-
-  @@unique([roundId, friendUserId])
-  @@map("round_friends")
 }
 
 model Friendship {
   id        String   @id @default(cuid())
   userId    String
   friendId  String
-  status    FriendshipStatus @default(PENDING)
+  status    String   @default("PENDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   user   UserProfile @relation("UserFriendships", fields: [userId], references: [userId], onDelete: Cascade)
-  friend UserProfile @relation("FriendOf", fields: [friendId], references: [userId], onDelete: Cascade)
+  friend UserProfile @relation("FriendFriendships", fields: [friendId], references: [userId], onDelete: Cascade)
 
   @@unique([userId, friendId])
   @@index([userId])
@@ -143,11 +122,11 @@ model Friendship {
 }
 
 model FriendActivity {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
-  type      ActivityType
-  data      Json // Flexible data for different activity types
-  createdAt DateTime     @default(now())
+  type      String
+  data      Json
+  createdAt DateTime @default(now())
 
   // Relations
   user UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
@@ -156,40 +135,32 @@ model FriendActivity {
   @@map("friend_activities")
 }
 
-enum FriendshipStatus {
-  PENDING
-  ACCEPTED
-  BLOCKED
-}
-
-enum ActivityType {
-  ROUND_COMPLETED
-  PERSONAL_BEST
-  HOLE_IN_ONE
-  EAGLE
-  BIRDIE
-  COURSE_RECORD
-  FRIEND_ADDED
-}
-
-// New: Friend invites for sharing links via email/phone
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  EXPIRED
-}
-
 model FriendInvite {
-  id          String       @id @default(cuid())
-  inviterId   String
-  email       String?
-  phone       String?
-  token       String       @unique
-  status      InviteStatus @default(PENDING)
-  createdAt   DateTime     @default(now())
-  acceptedAt  DateTime?
+  id         String   @id @default(cuid())
+  inviterId  String
+  email      String?
+  phone      String?
+  token      String   @unique
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  acceptedAt DateTime?
 
-  inviter UserProfile @relation("InvitesSent", fields: [inviterId], references: [userId], onDelete: Cascade)
+  // Relations
+  inviter UserProfile @relation("InvitesByUser", fields: [inviterId], references: [userId], onDelete: Cascade)
 
   @@map("friend_invites")
+}
+
+model RoundFriend {
+  id           String   @id @default(cuid())
+  roundId      String
+  friendUserId String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  friend UserProfile @relation(fields: [friendUserId], references: [userId], onDelete: Cascade)
+
+  @@unique([roundId, friendUserId])
+  @@map("round_friends")
 }

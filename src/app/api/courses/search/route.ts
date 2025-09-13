@@ -5,16 +5,16 @@ import { getGolfCourseAPIClient } from '@/lib/golf-course-api'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient(request)
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError) {
-      console.warn('Auth error in course search:', authError)
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
-    }
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Auth is optional here: we show public search results and
+    // enhance them with play counts only when the user is logged in.
+    let userId: string | null = null
+    try {
+      const supabase = await createClient(request)
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id ?? null
+    } catch (e) {
+      // Ignore auth errors; proceed as anonymous
+      userId = null
     }
 
     const { searchParams } = new URL(request.url)
@@ -55,32 +55,26 @@ export async function GET(request: NextRequest) {
       // Get user's play history for local courses with timeout
       const localCourseIds = localCourses.map(c => c.id)
       let userRounds: any[] = []
-      
-      if (localCourseIds.length > 0) {
+      if (userId && localCourseIds.length > 0) {
         try {
           userRounds = await withTimeout(
             prisma.round.groupBy({
               by: ['courseId'],
               where: {
-                userId: user.id,
+                userId: userId,
                 courseId: { in: localCourseIds }
               },
-              _count: {
-                id: true
-              }
+              _count: { id: true }
             } as any),
-            5000 // 5 second timeout for rounds query
+            5000
           )
         } catch (roundsError) {
           console.warn('Failed to get user rounds history:', roundsError)
-          // Continue without play counts
         }
       }
 
     // Create a map of course play counts
-    const playCountMap = new Map(
-      userRounds.map(r => [r.courseId, r._count.id])
-    )
+    const playCountMap = new Map(userRounds.map(r => [r.courseId, r._count.id]))
 
     // Add play counts to local courses
     const localCoursesWithPlayCount = localCourses.map(course => ({

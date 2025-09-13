@@ -11,8 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import MapCoursePicker, { type MapCourse } from '@/components/courses/map-course-picker'
+import dynamic from 'next/dynamic'
+import type { MapCourse } from '@/components/courses/map-course-picker'
 import { CourseSearchInput } from '@/components/courses/course-search-input'
+
+// Mapbox GL is not SSR-friendly; load the picker only on the client
+const MapCoursePicker = dynamic(() => import('@/components/courses/map-course-picker'), {
+  ssr: false,
+})
 
 interface Course {
   id: string
@@ -90,8 +96,8 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
         newErrors.score = 'Please enter your total score'
       } else {
         const score = parseInt(totalScore)
-        if (isNaN(score) || score < 50 || score > 150) {
-          newErrors.score = 'Score must be between 50 and 150'
+        if (isNaN(score) || score < 20 || score > 150) {
+          newErrors.score = 'Score must be between 20 and 150'
         }
       }
     } else {
@@ -372,7 +378,7 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
                   }
                 }}
                 placeholder="e.g. 85"
-                min="50"
+                min="20"
                 max="150"
                 className={errors.score ? 'border-red-500' : ''}
                 required={!useHoleByHole}
@@ -416,9 +422,11 @@ export function NewRoundForm({}: NewRoundFormProps = {}) {
           {/* Friends */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Played with friends?</Label>
+              <Label htmlFor="withFriends">Played with friends?</Label>
               <input
+                id="withFriends"
                 type="checkbox"
+                aria-label="Played with friends"
                 className="h-4 w-4"
                 checked={withFriends}
                 onChange={(e) => setWithFriends(e.target.checked)}

@@ -180,9 +180,9 @@ export function CoursesDirectory({
   }, [searchTimeout])
 
   const handleCourseEdit = useCallback(async (course: Course) => {
-    // This would typically open an edit dialog
-    toast.info('Course editing functionality would open here')
-  }, [])
+    // Navigate to the dedicated edit page
+    router.push(`/courses/${course.id}/edit`)
+  }, [router])
 
   const handleCourseDelete = useCallback(async (course: Course) => {
     if (!confirm(`Delete ${course.name}? This cannot be undone.`)) return
